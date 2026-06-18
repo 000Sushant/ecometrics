@@ -9,7 +9,7 @@ import { CountryEmissions } from '../models/country-emissions.model';
 })
 export class ImpactService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = '/api';
 
   getReports(): Observable<ImpactReport[]> {
     return this.http.get<ImpactReport[]>(`${this.apiUrl}/reports`);

@@ -5,7 +5,7 @@ import { NetImpactFeedComponent } from './net-impact-feed.component';
 import { ImpactReport } from '../../core/models/impact-report.model';
 import { CountryEmissions } from '../../core/models/country-emissions.model';
 
-const API = 'http://localhost:3000/api';
+const API = '/api';
 
 const makeReport = (overrides: Partial<ImpactReport> = {}): ImpactReport => ({
   id: 'report-x',

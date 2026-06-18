@@ -4,7 +4,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { ImpactService } from './impact.service';
 import { ImpactReport } from '../models/impact-report.model';
 
-const API = 'http://localhost:3000/api';
+const API = '/api';
 
 describe('ImpactService', () => {
   let service: ImpactService;
