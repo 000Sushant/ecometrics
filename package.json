@@ -1,0 +1,16 @@
+{
+  "name": "ecometrics",
+  "version": "1.0.0",
+  "description": "Climate impact and news analyzer with data-driven SVG animations.",
+  "private": true,
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:test": "npm --prefix backend run test",
+    "frontend:start": "npm --prefix frontend run start",
+    "frontend:test": "npm --prefix frontend run test"
+  }
+}
