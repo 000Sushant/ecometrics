@@ -61,10 +61,13 @@ describe('ImpactCardComponent', () => {
       ((153000 * 3) / 2500000).toLocaleString(undefined, {
         minimumFractionDigits: 1,
         maximumFractionDigits: 2,
-      })
+      }),
     );
     expect(component.getLandParks()).toBe(
-      (153000 / 36800).toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+      (153000 / 36800).toLocaleString(undefined, {
+        minimumFractionDigits: 1,
+        maximumFractionDigits: 1,
+      }),
     );
     expect(component.getHabitYears()).toBe(Math.round(153000 / 525.7).toLocaleString());
   });
@@ -85,7 +88,9 @@ describe('ImpactCardComponent', () => {
     let emitted: 'up' | 'down' | undefined;
     component.vote.subscribe((dir) => (emitted = dir));
 
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.protest-btn')!.click();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('.protest-btn')!
+      .click();
     expect(emitted).toBe('up');
   });
 
@@ -96,7 +101,9 @@ describe('ImpactCardComponent', () => {
     let emitted: 'up' | 'down' | undefined;
     component.vote.subscribe((dir) => (emitted = dir));
 
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.protest-btn')!.click();
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>('.protest-btn')!
+      .click();
     expect(emitted).toBe('down');
   });
 

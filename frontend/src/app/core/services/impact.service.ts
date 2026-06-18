@@ -20,8 +20,13 @@ export class ImpactService {
     return this.http.post<ImpactReport[]>(`${this.apiUrl}/analyze`, payload);
   }
 
-  getClimateHistory(): Observable<{ source: string; history: { year: number; emissions: number }[] }> {
-    return this.http.get<{ source: string; history: { year: number; emissions: number }[] }>(`${this.apiUrl}/climate-history`);
+  getClimateHistory(): Observable<{
+    source: string;
+    history: { year: number; emissions: number }[];
+  }> {
+    return this.http.get<{ source: string; history: { year: number; emissions: number }[] }>(
+      `${this.apiUrl}/climate-history`,
+    );
   }
 
   getCountryEmissions(): Observable<CountryEmissions[]> {

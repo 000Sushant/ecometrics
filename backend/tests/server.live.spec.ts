@@ -125,7 +125,7 @@ describe('Server API (live mode)', () => {
       const res = await request(app).post('/api/analyze').send({ q: 'climate' });
 
       expect(res.status).toBe(500);
-      expect(res.body).toHaveProperty('message', 'news fetch failed');
+      expect(res.body).toEqual({ error: 'An internal server error occurred.' });
     });
   });
 

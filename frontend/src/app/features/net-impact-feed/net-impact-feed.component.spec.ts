@@ -131,24 +131,31 @@ describe('NetImpactFeedComponent', () => {
   });
 
   it('maps reports to dashboard topics across every branch', () => {
-    expect(c.toDashboardBrief(makeReport({ id: 'a', articleTitle: 'New AI data center' })).topic).toBe('Tech/AI');
-    expect(c.toDashboardBrief(makeReport({ id: 'b', category: 'Energy', articleTitle: 'Plant' })).topic).toBe(
-      'Aviation & Energy'
-    );
-    expect(c.toDashboardBrief(makeReport({ id: 'c', category: 'Deforestation', articleTitle: 'Trees' })).topic).toBe(
-      'Ecosystems & Tourism'
-    );
-    expect(c.toDashboardBrief(makeReport({ id: 'd', category: 'General', articleTitle: 'Policy' })).topic).toBe(
-      'Climate & Policy'
-    );
+    expect(
+      c.toDashboardBrief(makeReport({ id: 'a', articleTitle: 'New AI data center' })).topic,
+    ).toBe('Tech/AI');
+    expect(
+      c.toDashboardBrief(makeReport({ id: 'b', category: 'Energy', articleTitle: 'Plant' })).topic,
+    ).toBe('Aviation & Energy');
+    expect(
+      c.toDashboardBrief(makeReport({ id: 'c', category: 'Deforestation', articleTitle: 'Trees' }))
+        .topic,
+    ).toBe('Ecosystems & Tourism');
+    expect(
+      c.toDashboardBrief(makeReport({ id: 'd', category: 'General', articleTitle: 'Policy' }))
+        .topic,
+    ).toBe('Climate & Policy');
     // Fallback by title keywords when category is unknown.
     const unknownCat = (title: string) =>
-      c.toDashboardBrief(makeReport({ id: title, category: '' as never, articleTitle: title })).topic;
+      c.toDashboardBrief(makeReport({ id: title, category: '' as never, articleTitle: title }))
+        .topic;
     expect(unknownCat('Coal power surge')).toBe('Aviation & Energy');
     expect(unknownCat('Wetland resort dispute')).toBe('Ecosystems & Tourism');
     expect(unknownCat('Something neutral')).toBe('Climate & Policy');
     // An already-shaped brief is returned unchanged.
-    const brief = c.toDashboardBrief(makeReport({ id: 'fifa' }) as ImpactReport & { topic?: string });
+    const brief = c.toDashboardBrief(
+      makeReport({ id: 'fifa' }) as ImpactReport & { topic?: string },
+    );
     expect(c.toDashboardBrief({ ...brief }).topic).toBe(brief.topic);
   });
 
@@ -161,7 +168,7 @@ describe('NetImpactFeedComponent', () => {
     expect(c.protestedReportIds().has(report.id)).toBe(true);
     expect(c.reports().find((r: { id: string }) => r.id === report.id).votes).toBe(before + 1);
     expect(c.activeReport().votes).toBe(before + 1);
-    expect(JSON.parse(localStorage.getItem('echometrics_protested_reports')!)).toContain(report.id);
+    expect(JSON.parse(localStorage.getItem('ecometrics_protested_reports')!)).toContain(report.id);
 
     c.handleVote(report.id, 'down');
     expect(c.protestedReportIds().has(report.id)).toBe(false);
@@ -253,7 +260,7 @@ describe('NetImpactFeedComponent', () => {
 
     it('restores persisted protests and bumps their vote counts', () => {
       const targetId = 'report-mock-fifa-2026';
-      localStorage.setItem('echometrics_protested_reports', JSON.stringify([targetId]));
+      localStorage.setItem('ecometrics_protested_reports', JSON.stringify([targetId]));
 
       c.ngOnInit();
       flushInit();
@@ -263,7 +270,7 @@ describe('NetImpactFeedComponent', () => {
     });
 
     it('ignores malformed persisted protest data', () => {
-      localStorage.setItem('echometrics_protested_reports', '{not json');
+      localStorage.setItem('ecometrics_protested_reports', '{not json');
 
       c.ngOnInit();
       flushInit();

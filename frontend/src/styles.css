@@ -19,7 +19,7 @@
   --shadow-soft: 0 18px 45px rgba(25, 84, 46, 0.12);
   --shadow-card: 0 10px 28px rgba(23, 32, 22, 0.08);
   --radius: 8px;
-  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
 * {
@@ -28,6 +28,47 @@
 
 html {
   background: var(--color-bg);
+}
+
+/* ---- Accessibility helpers ---- */
+
+/* Visible keyboard focus on every interactive element. */
+:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Content available to assistive tech but visually hidden. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Skip-to-content link, revealed on keyboard focus. */
+.skip-link {
+  position: absolute;
+  left: 8px;
+  top: -48px;
+  z-index: 1000;
+  background: var(--color-primary);
+  color: #fff;
+  padding: 8px 14px;
+  border-radius: 6px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top 0.15s ease;
+}
+
+.skip-link:focus {
+  top: 8px;
 }
 
 body {
@@ -134,7 +175,7 @@ a {
 }
 
 .live-badge::before {
-  content: "";
+  content: '';
   width: 5px;
   height: 5px;
   border-radius: 50%;
@@ -282,7 +323,6 @@ a {
 }
 
 @keyframes leaf-sway {
-
   0%,
   100% {
     transform: rotate(-3deg) translateY(0);
@@ -409,11 +449,13 @@ a {
   border: 1px solid var(--color-line);
   border-radius: var(--radius);
   background: #fff;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
 }
 
 .impact-card::before {
-  content: "";
+  content: '';
   position: absolute;
   inset: 0 auto 0 0;
   width: 5px;
@@ -567,7 +609,6 @@ a {
 }
 
 @keyframes float-ice {
-
   0%,
   100% {
     transform: translateY(0);
@@ -705,7 +746,9 @@ a {
   background: #fff;
   cursor: pointer;
   user-select: none;
-  transition: border-color 0.2s ease, background-color 0.2s ease;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease;
 }
 
 .contribution-item:hover {
@@ -718,7 +761,7 @@ a {
   background-color: var(--color-primary-soft);
 }
 
-.contribution-item input[type="checkbox"] {
+.contribution-item input[type='checkbox'] {
   margin-top: 3px;
   cursor: pointer;
   accent-color: var(--color-primary);
@@ -774,7 +817,6 @@ a {
 }
 
 @media (max-width: 1120px) {
-
   .hero,
   .section-grid {
     grid-template-columns: 1fr;
@@ -824,7 +866,6 @@ a {
 }
 
 @media (prefers-reduced-motion: reduce) {
-
   *,
   *::before,
   *::after {
@@ -964,7 +1005,9 @@ a {
 }
 
 .donut-slice {
-  transition: stroke-width 0.2s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.2s ease;
+  transition:
+    stroke-width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.2s ease;
   cursor: pointer;
 }
 
@@ -1116,6 +1159,18 @@ a {
   font-size: 0.95rem;
 }
 
+.country-select {
+  font-family: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--color-ink);
+  background: #fff;
+  border: 1px solid var(--color-line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
 .year-slider {
   -webkit-appearance: none;
   appearance: none;
@@ -1168,7 +1223,10 @@ a {
 
 #world-map path,
 #world-map g {
-  transition: fill 0.25s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.25s ease, stroke-width 0.2s ease;
+  transition:
+    fill 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    stroke 0.25s ease,
+    stroke-width 0.2s ease;
 }
 
 .interactive-country {

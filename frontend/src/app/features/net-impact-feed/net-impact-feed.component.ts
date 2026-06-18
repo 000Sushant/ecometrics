@@ -1,31 +1,46 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, computed, inject, OnInit, signal, PLATFORM_ID, ElementRef, viewChild, afterRenderEffect } from '@angular/core';
+import {
+  Component,
+  computed,
+  inject,
+  OnInit,
+  signal,
+  PLATFORM_ID,
+  ElementRef,
+  viewChild,
+  afterRenderEffect,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
-import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { ImpactReport } from '../../core/models/impact-report.model';
 import { ImpactService } from '../../core/services/impact.service';
 import { ImpactCardComponent } from '../../shared/components/impact-card/impact-card.component';
+import { FootprintComponent } from '../footprint/footprint.component';
+import {
+  TopicFilter,
+  DashboardBrief,
+  MODELED_BRIEFS,
+  LEADERBOARD,
+  CURRENT_USER_RANK,
+} from './net-impact-feed.data';
 import { CountryEmissions } from '../../core/models/country-emissions.model';
+import {
+  PERSON_OXYGEN_KG_CO2_PER_YEAR,
+  GLACIER_MELT_LITRES_PER_KG,
+  OLYMPIC_POOL_LITRES,
+  CITY_PARK_KG_CO2,
+  COMMUTE_YEAR_KG_CO2,
+} from '../../core/carbon.constants';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
 
-type TopicFilter = 'All' | 'Tech/AI' | 'Aviation & Energy' | 'Ecosystems & Tourism' | 'Climate & Policy';
-
-interface DashboardBrief extends ImpactReport {
-  topic: Exclude<TopicFilter, 'All'>;
-  leaderMove: string;
-  actionNudge: string;
-  votes: number;
-}
-
 @Component({
   selector: 'app-net-impact-feed',
   standalone: true,
-  imports: [CommonModule, FormsModule, ImpactCardComponent],
+  imports: [CommonModule, FormsModule, ImpactCardComponent, FootprintComponent],
   template: `
-    <main class="dashboard-shell">
+    <main class="dashboard-shell" id="main-content">
       <section class="hero" aria-labelledby="dashboard-title">
         <div class="hero-copy">
           <div class="brand-row">
@@ -35,16 +50,52 @@ interface DashboardBrief extends ImpactReport {
                   <!-- Green Earth Globe -->
                   <circle cx="24" cy="24" r="21" stroke="currentColor" stroke-width="3" />
                   <!-- Longitude lines -->
-                  <path d="M24 3C17 10 17 38 24 45" stroke="currentColor" stroke-width="2" opacity="0.8" />
-                  <path d="M24 3C31 10 31 38 24 45" stroke="currentColor" stroke-width="2" opacity="0.8" />
-                  <line x1="24" y1="3" x2="24" y2="45" stroke="currentColor" stroke-width="2" opacity="0.8" />
+                  <path
+                    d="M24 3C17 10 17 38 24 45"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.8"
+                  />
+                  <path
+                    d="M24 3C31 10 31 38 24 45"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.8"
+                  />
+                  <line
+                    x1="24"
+                    y1="3"
+                    x2="24"
+                    y2="45"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.8"
+                  />
                   <!-- Latitude lines -->
-                  <path d="M3 24C10 17 38 17 45 24" stroke="currentColor" stroke-width="2" opacity="0.8" />
-                  <path d="M3 24C10 31 38 31 45 24" stroke="currentColor" stroke-width="2" opacity="0.8" />
-                  <line x1="3" y1="24" x2="45" y2="24" stroke="currentColor" stroke-width="2" opacity="0.8" />
+                  <path
+                    d="M3 24C10 17 38 17 45 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.8"
+                  />
+                  <path
+                    d="M3 24C10 31 38 31 45 24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.8"
+                  />
+                  <line
+                    x1="3"
+                    y1="24"
+                    x2="45"
+                    y2="24"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    opacity="0.8"
+                  />
                 </svg>
               </span>
-              <span>EchoMetrics</span>
+              <span>EcoMetrics</span>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
               <button
@@ -53,23 +104,34 @@ interface DashboardBrief extends ImpactReport {
                 [class.active]="showInsightsMap()"
                 (click)="showInsightsMap.set(!showInsightsMap())"
               >
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="margin-right: 4px; display: inline-block; vertical-align: middle;">
-                  <circle cx="12" cy="12" r="10"/>
-                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/>
-                  <path d="M2 12h20"/>
+                <svg
+                  width="15"
+                  height="15"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  style="margin-right: 4px; display: inline-block; vertical-align: middle;"
+                >
+                  <circle cx="12" cy="12" r="10" />
+                  <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+                  <path d="M2 12h20" />
                 </svg>
-                <span style="vertical-align: middle;">{{ showInsightsMap() ? 'Hide Map' : 'More Insights' }}</span>
+                <span style="vertical-align: middle;">{{
+                  showInsightsMap() ? 'Hide Map' : 'More Insights'
+                }}</span>
               </button>
               <span class="live-badge">Impact intelligence desk</span>
             </div>
           </div>
 
           <div>
-            <p class="eyebrow">Carbon footprint news dashboard</p>
-            <h1 id="dashboard-title">See what global moves cost the planet.</h1>
+            <p class="eyebrow">Your personal carbon footprint dashboard</p>
+            <h1 id="dashboard-title">Understand, track, and shrink your carbon footprint.</h1>
             <p class="hero-lede">
-              Track high-impact news through human-scale comparisons: oxygen claimed from people,
-              glacier ice melted, city park cooling power erased, and lifetime driving pollution.
+              Estimate your weekly footprint, commit to simple daily actions, and get personalized
+              insights — set against real-world climate context so you can see how your choices fit
+              the bigger picture.
             </p>
           </div>
 
@@ -84,18 +146,24 @@ interface DashboardBrief extends ImpactReport {
             />
             <button class="primary-button" type="submit" [disabled]="loading()">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-                <path d="m21 21-4.35-4.35M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" />
+                <path
+                  d="m21 21-4.35-4.35M10.8 18a7.2 7.2 0 1 1 0-14.4 7.2 7.2 0 0 1 0 14.4Z"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                />
               </svg>
               {{ loading() ? 'Analyzing' : 'Analyze' }}
             </button>
           </form>
 
-          <div class="topic-strip" role="list" aria-label="Major carbon impact topics">
+          <div class="topic-strip" role="group" aria-label="Major carbon impact topics">
             <button
               *ngFor="let topic of topics"
               type="button"
               class="topic-chip"
               [class.active]="activeTopic() === topic"
+              [attr.aria-pressed]="activeTopic() === topic"
               (click)="setTopic(topic)"
             >
               {{ topic }}
@@ -105,8 +173,19 @@ interface DashboardBrief extends ImpactReport {
           <!-- Decorative background leaf watermark (moved to avoid hiding card text) -->
           <svg class="leaf-orbit" viewBox="0 0 180 180" fill="none" aria-hidden="true">
             <path d="M139 22C83 26 40 59 29 121c42 9 95-3 110-99Z" fill="#15803d" opacity=".9" />
-            <path d="M38 121c29-38 61-65 99-92" stroke="#f8fff5" stroke-width="8" stroke-linecap="round" />
-            <path d="M73 90c-2-20 4-37 20-53M94 70c18 12 35 15 56 10" stroke="#f8fff5" stroke-width="5" stroke-linecap="round" opacity=".88" />
+            <path
+              d="M38 121c29-38 61-65 99-92"
+              stroke="#f8fff5"
+              stroke-width="8"
+              stroke-linecap="round"
+            />
+            <path
+              d="M73 90c-2-20 4-37 20-53M94 70c18 12 35 15 56 10"
+              stroke="#f8fff5"
+              stroke-width="5"
+              stroke-linecap="round"
+              opacity=".88"
+            />
           </svg>
         </div>
 
@@ -115,15 +194,22 @@ interface DashboardBrief extends ImpactReport {
             <!-- 1. Total Carbon Output (2017–2026) with Sector Ranking (Interactive Donut Chart) -->
             <div class="pulse-card relative-card document-style-card">
               <span class="pulse-card-eyebrow">Total Carbon Output (2017–2026)</span>
-              
+
               <div class="donut-layout" style="margin-top: 8px;">
                 <!-- Left: Donut Chart -->
                 <div class="donut-chart-wrapper">
                   <svg viewBox="0 0 42 42" class="donut-svg">
                     <g transform="rotate(-90 21 21)">
                       <!-- Base Track Circle -->
-                      <circle cx="21" cy="21" r="15.91549430918954" fill="transparent" stroke="#f1f5f9" stroke-width="3.2" />
-                      
+                      <circle
+                        cx="21"
+                        cy="21"
+                        r="15.91549430918954"
+                        fill="transparent"
+                        stroke="#f1f5f9"
+                        stroke-width="3.2"
+                      />
+
                       <!-- Segment Circles -->
                       <circle
                         *ngFor="let slice of donutSlices()"
@@ -141,22 +227,26 @@ interface DashboardBrief extends ImpactReport {
                         (mouseleave)="hoveredSectorIndex.set(null)"
                       />
                     </g>
-                    
+
                     <!-- Center Details -->
                     <g class="donut-center-group">
                       <!-- Title / Label -->
                       <text x="21" y="16" text-anchor="middle" class="donut-center-label">
                         {{ donutCenterTitle() }}
                       </text>
-                      
+
                       <!-- Value -->
                       <text x="21" y="22.5" text-anchor="middle" class="donut-center-val">
                         {{ donutCenterValue() }}
                       </text>
-                      
+
                       <!-- Subtitle -->
                       <text x="21" y="27.5" text-anchor="middle" class="donut-center-sub">
-                        {{ hoveredSectorIndex() !== null ? (sectorsList()[hoveredSectorIndex() ?? 0].percentage + '% share') : '10-Yr Sum' }}
+                        {{
+                          hoveredSectorIndex() !== null
+                            ? sectorsList()[hoveredSectorIndex() ?? 0].percentage + '% share'
+                            : '10-Yr Sum'
+                        }}
                       </text>
                     </g>
                   </svg>
@@ -190,8 +280,32 @@ interface DashboardBrief extends ImpactReport {
                 <span class="history-years">2017 - 2026</span>
               </div>
               <div class="chart-container document-style" style="position: relative; height: 80px;">
-                <canvas #globalChartCanvas></canvas>
+                <canvas
+                  #globalChartCanvas
+                  role="img"
+                  [attr.aria-label]="
+                    'Global carbon footprint trend, 2017 to 2026, in gigatons of CO2: ' +
+                    globalChartSummary()
+                  "
+                ></canvas>
               </div>
+              <table class="sr-only">
+                <caption>
+                  Global carbon footprint by year (gigatons CO₂)
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Year</th>
+                    <th scope="col">Emissions (Gt CO₂)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let point of climateHistory()">
+                    <td>{{ point.year }}</td>
+                    <td>{{ point.emissions }}</td>
+                  </tr>
+                </tbody>
+              </table>
               <span class="source-caption">Source: {{ historySource() }}</span>
             </div>
           </div>
@@ -204,14 +318,18 @@ interface DashboardBrief extends ImpactReport {
           <div>
             <h2 class="panel-title">Global Emissions Lens (Last 10 Years)</h2>
             <p class="panel-subtitle">
-              Scrub the timeline to see changes in national carbon footprints. Hover or click country bubbles to explore detailed insights.
+              Scrub the timeline to see changes in national carbon footprints. Hover or click
+              country bubbles to explore detailed insights.
             </p>
           </div>
           <div class="map-controls">
             <!-- Year Scrubber -->
             <div class="scrubber-control">
-              <span class="slider-year-label">Year: <strong>{{ selectedYear() }}</strong></span>
+              <label class="slider-year-label" for="year-slider"
+                >Year: <strong>{{ selectedYear() }}</strong></label
+              >
               <input
+                id="year-slider"
                 type="range"
                 min="2017"
                 max="2026"
@@ -219,19 +337,36 @@ interface DashboardBrief extends ImpactReport {
                 class="year-slider"
                 [value]="selectedYear()"
                 (input)="onYearSliderChange($event)"
+                aria-label="Select year for emissions data"
+                [attr.aria-valuetext]="selectedYear() + ''"
               />
+            </div>
+            <!-- Keyboard/screen-reader equivalent for the visual map below -->
+            <div class="scrubber-control">
+              <label class="slider-year-label" for="country-select">Country</label>
+              <select
+                id="country-select"
+                class="country-select"
+                [value]="selectedCountryCode()"
+                (change)="onCountrySelect($event)"
+              >
+                <option *ngFor="let c of countryEmissions()" [value]="c.code">{{ c.name }}</option>
+              </select>
             </div>
           </div>
         </div>
 
         <div class="map-workspace">
-          <!-- Left/Center: SVG World Map -->
-          <div class="map-canvas-wrapper" style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;">
+          <!-- Left/Center: SVG World Map (decorative duplicate of the country selector + detail panel) -->
+          <div
+            class="map-canvas-wrapper"
+            style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;"
+          >
             <div
               #mapContainer
-              [innerHTML]="svgContent()"
               class="world-map-container"
               style="width: 100%;"
+              aria-hidden="true"
               (click)="onMapClick($event)"
               (mouseover)="onMapHover($event)"
               (mouseleave)="onMapLeave()"
@@ -244,15 +379,19 @@ interface DashboardBrief extends ImpactReport {
               <span class="detail-country-code">{{ country.code }}</span>
               <h3 class="detail-country-name">{{ country.name }}</h3>
             </div>
-            
+
             <div class="detail-stats-grid">
               <div class="detail-stat-box">
                 <span class="detail-stat-label">Emissions ({{ selectedYear() }})</span>
-                <strong class="detail-stat-value text-danger">{{ activeCountryYearEmissions() }} Gt</strong>
+                <strong class="detail-stat-value text-danger"
+                  >{{ activeCountryYearEmissions() }} Gt</strong
+                >
               </div>
               <div class="detail-stat-box">
                 <span class="detail-stat-label">Per Capita Footprint</span>
-                <strong class="detail-stat-value text-warning">{{ country.perCapita }} t / person</strong>
+                <strong class="detail-stat-value text-warning"
+                  >{{ country.perCapita }} t / person</strong
+                >
               </div>
               <div class="detail-stat-box">
                 <span class="detail-stat-label">Global Share</span>
@@ -266,29 +405,79 @@ interface DashboardBrief extends ImpactReport {
                 <span>10-Year Trend (2017-2026)</span>
               </div>
               <div class="mini-trend-chart" style="position: relative; height: 70px; width: 100%;">
-                <canvas #countryChartCanvas></canvas>
+                <canvas
+                  #countryChartCanvas
+                  role="img"
+                  [attr.aria-label]="
+                    '10-year emissions trend for ' + country.name + ' in gigatons of CO2'
+                  "
+                ></canvas>
               </div>
+              <table class="sr-only">
+                <caption>
+                  {{
+                    country.name
+                  }}
+                  emissions by year (gigatons CO₂)
+                </caption>
+                <thead>
+                  <tr>
+                    <th scope="col">Year</th>
+                    <th scope="col">Emissions (Gt CO₂)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr *ngFor="let point of country.history">
+                    <td>{{ point.year }}</td>
+                    <td>{{ point.emissions }}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
 
             <!-- Human Scale Context Nudges -->
             <div class="detail-context-section">
               <h4 class="context-title">What does this cost represent?</h4>
-              
+
               <div class="context-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="context-icon text-warning" style="display: inline-block; vertical-align: middle;">
-                  <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v4c0 .6.4 1 1 1h2" />
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="context-icon text-warning"
+                  style="display: inline-block; vertical-align: middle;"
+                >
+                  <path
+                    d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v4c0 .6.4 1 1 1h2"
+                  />
                   <circle cx="7" cy="17" r="2" />
                   <path d="M9 17h6" />
                   <circle cx="17" cy="17" r="2" />
                 </svg>
-                <span class="context-desc" style="vertical-align: middle; margin-left: 6px;">{{ countryCarEquivalent() }}</span>
+                <span class="context-desc" style="vertical-align: middle; margin-left: 6px;">{{
+                  countryCarEquivalent()
+                }}</span>
               </div>
 
               <div class="context-item" style="margin-top: 8px;">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="context-icon text-primary" style="display: inline-block; vertical-align: middle;">
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="context-icon text-primary"
+                  style="display: inline-block; vertical-align: middle;"
+                >
                   <path d="M12 22V12m0 0a5 5 0 0 0 5-5c0-2.8-2.2-5-5-5S7 4.2 7 7a5 5 0 0 0 5 5Z" />
                 </svg>
-                <span class="context-desc" style="vertical-align: middle; margin-left: 6px;">{{ countryTreeEquivalent() }}</span>
+                <span class="context-desc" style="vertical-align: middle; margin-left: 6px;">{{
+                  countryTreeEquivalent()
+                }}</span>
               </div>
             </div>
           </div>
@@ -297,29 +486,61 @@ interface DashboardBrief extends ImpactReport {
 
       <section class="kpi-grid" aria-label="Dashboard statistics">
         <article class="kpi-card">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color: #38bdf8; width: 18px; height: 18px; display: block;">
-            <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+            style="color: #38bdf8; width: 18px; height: 18px; display: block;"
+          >
+            <path
+              d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"
+            />
           </svg>
           <span class="kpi-label">Air (Oxygen Claimed)</span>
           <strong class="kpi-value">{{ airOxygenClaimed() }}</strong>
         </article>
         <article class="kpi-card">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color: var(--color-water); width: 18px; height: 18px; display: block;">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+            style="color: var(--color-water); width: 18px; height: 18px; display: block;"
+          >
             <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7Z" />
           </svg>
           <span class="kpi-label">Water (Glacier Melt)</span>
           <strong class="kpi-value">{{ waterGlacierMelt() }}</strong>
         </article>
         <article class="kpi-card">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color: var(--color-primary); width: 18px; height: 18px; display: block;">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+            style="color: var(--color-primary); width: 18px; height: 18px; display: block;"
+          >
             <path d="M12 22V12m0 0a5 5 0 0 0 5-5c0-2.8-2.2-5-5-5S7 4.2 7 7a5 5 0 0 0 5 5Z" />
           </svg>
           <span class="kpi-label">Land (Parks Erased)</span>
           <strong class="kpi-value">{{ landParksErased() }}</strong>
         </article>
         <article class="kpi-card">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true" style="color: var(--color-warning); width: 18px; height: 18px; display: block;">
-            <path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v4c0 .6.4 1 1 1h2" />
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            aria-hidden="true"
+            style="color: var(--color-warning); width: 18px; height: 18px; display: block;"
+          >
+            <path
+              d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v4c0 .6.4 1 1 1h2"
+            />
             <circle cx="7" cy="17" r="2" />
             <path d="M9 17h6" />
             <circle cx="17" cy="17" r="2" />
@@ -335,12 +556,20 @@ interface DashboardBrief extends ImpactReport {
             <div>
               <h2 class="panel-title" style="display: inline-flex; align-items: center; gap: 8px;">
                 <span>Negative Climate Impact Briefs</span>
-                <span class="badge" [style.--topic-color]="isLiveFeed() ? 'var(--color-danger)' : 'var(--color-primary)'" [style.--topic-bg]="isLiveFeed() ? '#fee2e2' : 'var(--color-primary-soft)'" style="font-size: 0.68rem; padding: 2px 6px; min-height: auto;">
+                <span
+                  class="badge"
+                  [style.--topic-color]="
+                    isLiveFeed() ? 'var(--color-danger)' : 'var(--color-primary)'
+                  "
+                  [style.--topic-bg]="isLiveFeed() ? '#fee2e2' : 'var(--color-primary-soft)'"
+                  style="font-size: 0.68rem; padding: 2px 6px; min-height: auto;"
+                >
                   {{ isLiveFeed() ? 'Live News Feed' : 'Historical Archive' }}
                 </span>
               </h2>
               <p class="panel-subtitle">
-                Tracking only high-emission news where political decisions, infrastructure growth, or mass events increase carbon burden.
+                Tracking only high-emission news where political decisions, infrastructure growth,
+                or mass events increase carbon burden.
               </p>
             </div>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -351,12 +580,27 @@ interface DashboardBrief extends ImpactReport {
                 (click)="manualFetchNews()"
                 style="padding: 0 10px; min-height: 28px; font-size: 0.8rem;"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display: inline-block; vertical-align: middle;">
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  style="display: inline-block; vertical-align: middle;"
+                >
+                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
                 </svg>
-                <span style="vertical-align: middle;">{{ loading() ? 'Fetching...' : 'Fetch Latest News' }}</span>
+                <span style="vertical-align: middle;">{{
+                  loading() ? 'Fetching...' : 'Fetch Latest News'
+                }}</span>
               </button>
-              <button type="button" class="quiet-button" (click)="restoreModeledBriefs()" style="min-height: 28px; padding: 0 10px; font-size: 0.8rem;">
+              <button
+                type="button"
+                class="quiet-button"
+                (click)="restoreModeledBriefs()"
+                style="min-height: 28px; padding: 0 10px; font-size: 0.8rem;"
+              >
                 Reset desk
               </button>
             </div>
@@ -379,18 +623,24 @@ interface DashboardBrief extends ImpactReport {
         </div>
 
         <aside class="sidebar-stack">
+          <app-footprint></app-footprint>
+
           <section class="panel analytics-stack">
             <div class="panel-header">
               <div>
                 <h2 class="panel-title">Topic Pressure</h2>
-                <p class="panel-subtitle">Community interest ranked by cumulative protest alarms.</p>
+                <p class="panel-subtitle">
+                  Community interest ranked by cumulative protest alarms.
+                </p>
               </div>
             </div>
             <div class="analytics-body">
               <div class="bar-list">
                 <div class="bar-row" *ngFor="let item of topicVotes()">
                   <span class="bar-name">{{ item.topic }}</span>
-                  <span class="bar-track"><span class="bar-fill" [style.width.%]="item.percentage"></span></span>
+                  <span class="bar-track"
+                    ><span class="bar-fill" [style.width.%]="item.percentage"></span
+                  ></span>
                   <span class="bar-value">{{ item.votes }}</span>
                 </div>
               </div>
@@ -406,10 +656,14 @@ interface DashboardBrief extends ImpactReport {
             </div>
             <div class="leaderboard-list">
               <div class="leaderboard-row" *ngFor="let entry of leaderboard">
-                <span class="leaderboard-rank" [class.top]="entry.rank <= 3">{{ medal(entry.rank) }}</span>
+                <span class="leaderboard-rank" [class.top]="entry.rank <= 3">{{
+                  medal(entry.rank)
+                }}</span>
                 <div class="leaderboard-identity">
                   <span class="leaderboard-name">{{ entry.name }}</span>
-                  <span class="leaderboard-meta">{{ entry.location }} · {{ entry.streak }}-day streak</span>
+                  <span class="leaderboard-meta"
+                    >{{ entry.location }} · {{ entry.streak }}-day streak</span
+                  >
                 </div>
                 <strong class="leaderboard-score">{{ entry.co2SavedKg.toFixed(1) }} kg</strong>
               </div>
@@ -420,20 +674,30 @@ interface DashboardBrief extends ImpactReport {
                 <span class="leaderboard-rank">{{ medal(currentUserRank.rank) }}</span>
                 <div class="leaderboard-identity">
                   <span class="leaderboard-name">{{ currentUserRank.name }}</span>
-                  <span class="leaderboard-meta">{{ currentUserRank.location }} · {{ currentUserRank.streak }}-day streak</span>
+                  <span class="leaderboard-meta"
+                    >{{ currentUserRank.location }} · {{ currentUserRank.streak }}-day streak</span
+                  >
                 </div>
-                <strong class="leaderboard-score">{{ currentUserRank.co2SavedKg.toFixed(1) }} kg</strong>
+                <strong class="leaderboard-score"
+                  >{{ currentUserRank.co2SavedKg.toFixed(1) }} kg</strong
+                >
               </div>
             </div>
           </section>
 
           <section class="panel contribution-card">
             <h2 class="panel-title">My Daily Green Pledge</h2>
-            <p class="panel-subtitle">Your daily promise to the planet. Commit to small actions today for a greener tomorrow.</p>
-            
+            <p class="panel-subtitle">
+              Your daily promise to the planet. Commit to small actions today for a greener
+              tomorrow.
+            </p>
+
             <div class="progress-container">
               <div class="progress-labels">
-                <span>Pledge Progress: {{ totalSavedCo2().toFixed(1) }} / {{ dailyTarget }} kg CO₂</span>
+                <span
+                  >Pledge Progress: {{ totalSavedCo2().toFixed(1) }} / {{ dailyTarget }} kg
+                  CO₂</span
+                >
                 <span>{{ progressPercent() }}%</span>
               </div>
               <div class="progress-track">
@@ -442,24 +706,19 @@ interface DashboardBrief extends ImpactReport {
             </div>
 
             <div class="contribution-list">
-              <div 
-                *ngFor="let item of contributionActions()" 
-                class="contribution-item" 
+              <label
+                *ngFor="let item of contributionActions()"
+                class="contribution-item"
                 [class.checked]="item.checked"
-                (click)="toggleAction(item.id)"
               >
-                <input 
-                  type="checkbox" 
-                  [checked]="item.checked"
-                  (click)="$event.stopPropagation(); toggleAction(item.id)"
-                />
+                <input type="checkbox" [checked]="item.checked" (change)="toggleAction(item.id)" />
                 <div class="contribution-item-text">
                   <span class="contribution-item-label">{{ item.label }}</span>
                   <span class="contribution-item-saving">
                     Estimated savings: {{ item.co2SavedKg }} kg CO₂/day
                   </span>
                 </div>
-              </div>
+              </label>
             </div>
 
             <div class="contribution-summary">
@@ -471,24 +730,59 @@ interface DashboardBrief extends ImpactReport {
       </section>
 
       <footer class="dashboard-footer">
-        <p>Made with 💚 by <a href="https://000sushant.github.io/sushant-portfolio/" target="_blank" rel="noopener">Sushant Kumar</a></p>
+        <p>
+          Made with 💚 by
+          <a href="https://000sushant.github.io/sushant-portfolio/" target="_blank" rel="noopener"
+            >Sushant Kumar</a
+          >
+        </p>
         <div class="footer-links">
           <a href="https://000sushant.github.io/sushant-portfolio/" target="_blank" rel="noopener">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="display: inline-block; vertical-align: middle;"
+            >
+              <path
+                d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
+              />
             </svg>
             Portfolio
           </a>
           <a href="https://www.linkedin.com/in/sushant--kumar/" target="_blank" rel="noopener">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
-              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/>
-              <circle cx="4" cy="4" r="2"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="display: inline-block; vertical-align: middle;"
+            >
+              <path
+                d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"
+              />
+              <circle cx="4" cy="4" r="2" />
             </svg>
             LinkedIn
           </a>
           <a href="https://github.com/000Sushant" target="_blank" rel="noopener">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
-              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              style="display: inline-block; vertical-align: middle;"
+            >
+              <path
+                d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
+              />
             </svg>
             GitHub
           </a>
@@ -500,201 +794,23 @@ interface DashboardBrief extends ImpactReport {
 export class NetImpactFeedComponent implements OnInit {
   private impactService = inject(ImpactService);
 
-  private modeledBriefs: DashboardBrief[] = [
-    {
-      id: 'report-mock-fifa-2026',
-      articleId: 'fifa-2026',
-      articleTitle: 'FIFA World Cup 2026: Expansion to 48-team format sparks "most polluting ever" concerns',
-      articleUrl: '#',
-      carbonIntensity: 78,
-      co2EquivalentKg: 245000,
-      glacierMeltMm: 6.2,
-      forestImpactSqM: -9800,
-      explanation: 'Massive logistical emissions from intercontinental travel across 16 host cities and fossil fuel-linked sponsorship dependencies.',
-      category: 'Transport',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Aviation & Energy',
-      leaderMove: 'Tournament organizers and host cities face mounting pressure to decarbonize transit, limit short-haul fan flights, and phase out fossil-linked corporate sponsorships.',
-      actionNudge: 'If attending, opt for multi-city train passes instead of domestic flights, and support campaigns urging sports bodies to cut carbon footprints.',
-      votes: 112,
-    },
-    {
-      id: 'report-mock-ai-data-center',
-      articleId: 'ai-data-center',
-      articleTitle: 'Global AI Data Center Expansion Faces Growing Public Resistance',
-      articleUrl: '#',
-      carbonIntensity: 84,
-      co2EquivalentKg: 185000,
-      glacierMeltMm: 4.7,
-      forestImpactSqM: -7400,
-      explanation: 'High-intensity electricity consumption and large-scale water usage for cooling in already drought-prone and water-stressed regions.',
-      category: 'Energy',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Tech/AI',
-      leaderMove: 'Tech giants are forced to re-evaluate their grid demands, with local regulators demanding direct investment in new renewable capacity rather than relying on existing power grids.',
-      actionNudge: 'Support digital footprint reduction by cleaning cloud storage, opting for lighter model sizes where possible, and querying tech platforms on their green credentials.',
-      votes: 95,
-    },
-    {
-      id: 'report-mock-albania-wetlands',
-      articleId: 'albania-wetlands',
-      articleTitle: "Protests Erupt Over Luxury Resort Development in Albania's Protected Wetlands",
-      articleUrl: '#',
-      carbonIntensity: 72,
-      co2EquivalentKg: 124000,
-      glacierMeltMm: 3.1,
-      forestImpactSqM: -4900,
-      explanation: 'Habitat destruction for protected bird species and removal of carbon-sequestering coastal vegetation for commercial infrastructure.',
-      category: 'Deforestation',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Ecosystems & Tourism',
-      leaderMove: 'Balkan conservation groups are suing developers, highlighting a global trend where governments bypass environmental safeguards to attract luxury tourism capital.',
-      actionNudge: 'Choose eco-certified accommodations, respect local wildlife guidelines, and avoid coastal developments built on reclaimed or protected wetlands.',
-      votes: 78,
-    },
-    {
-      id: 'report-mock-un-overshoot',
-      articleId: 'un-overshoot',
-      articleTitle: 'UN Marks World Environment Day 2026 with 1.5°C Overshoot Warning',
-      articleUrl: '#',
-      carbonIntensity: 90,
-      co2EquivalentKg: 310000,
-      glacierMeltMm: 7.8,
-      forestImpactSqM: -12400,
-      explanation: 'Escalating heat-related mortality and crop failure risks due to cumulative greenhouse gas concentrations reaching historical highs.',
-      category: 'General',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Climate & Policy',
-      leaderMove: 'United Nations leaders are demanding immediate updates to national climate plans (NDCs) with binding timelines to phase out fossil fuels rather than relying on future offsets.',
-      actionNudge: 'Engage with local policy advocacy groups, vote for climate-conscious representatives, and support local climate resilience planning.',
-      votes: 143,
-    },
-    {
-      id: 'report-mock-energy-market',
-      articleId: 'energy-market',
-      articleTitle: 'Global Energy Market Shifts: Fossil Fuel Reliance vs. Renewable Transition',
-      articleUrl: '#',
-      carbonIntensity: 80,
-      co2EquivalentKg: 215000,
-      glacierMeltMm: 5.4,
-      forestImpactSqM: -8600,
-      explanation: 'Short-term spikes in localized air pollution due to increased oil/gas production output to meet 2026 energy security demands.',
-      category: 'Energy',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Aviation & Energy',
-      leaderMove: 'Energy ministers are balancing short-term supply security with long-term carbon commitments, resulting in mixed signals that delay capital transition to clean energy.',
-      actionNudge: 'Switch to a community solar program, install energy-efficient heat pumps, or audit your home insulation to reduce direct energy reliance.',
-      votes: 88,
-    },
-    {
-      id: 'report-mock-airline-netzero',
-      articleId: 'airline-netzero',
-      articleTitle: 'Airline industry chiefs admit 2050 net zero goal is unlikely',
-      articleUrl: '#',
-      carbonIntensity: 85,
-      co2EquivalentKg: 260000,
-      glacierMeltMm: 6.6,
-      forestImpactSqM: -10400,
-      explanation: 'Reliance on non-existent carbon-removal technologies and failure to reform global air traffic management systems.',
-      category: 'Transport',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Aviation & Energy',
-      leaderMove: 'Aviation executives call for massive state subsidies to scale up Sustainable Aviation Fuel (SAF) production, while environmental groups push for frequent-flyer levies.',
-      actionNudge: 'Limit non-essential air travel, select direct flights, and choose alternative travel modes like high-speed rail for regional trips.',
-      votes: 127,
-    },
-    {
-      id: 'report-mock-ai-water-land',
-      articleId: 'ai-water-land',
-      articleTitle: "AI's environmental costs threaten water, land and climate",
-      articleUrl: '#',
-      carbonIntensity: 82,
-      co2EquivalentKg: 170000,
-      glacierMeltMm: 4.3,
-      forestImpactSqM: -6800,
-      explanation: 'High electricity demand and massive water-cooling requirements for global data centers, often in drought-prone regions.',
-      category: 'Energy',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Tech/AI',
-      leaderMove: 'Regulators are proposing mandatory disclosure of water consumption and energy efficiency metrics specifically targeting AI compute facilities.',
-      actionNudge: 'Optimize your API queries, prefer energy-efficient algorithms, and support data centers operating in regions with high renewable energy mix.',
-      votes: 91,
-    },
-    {
-      id: 'report-mock-protesters-albania',
-      articleId: 'protesters-albania',
-      articleTitle: 'Protesters call to halt luxury resort in protected Albanian wetlands',
-      articleUrl: '#',
-      carbonIntensity: 68,
-      co2EquivalentKg: 110000,
-      glacierMeltMm: 2.8,
-      forestImpactSqM: -4400,
-      explanation: 'Habitat destruction of migratory flyways and removal of carbon-sequestering coastal vegetation for tourism infrastructure.',
-      category: 'Deforestation',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Ecosystems & Tourism',
-      leaderMove: 'Conservationists are staging sit-ins, urging the European Union to make environmental protection a key condition for regional funding and accession talks.',
-      actionNudge: 'Raise awareness of ecological corridors, support conservation NGOs, and sign petitions against zoning laws that permit wetland commercialization.',
-      votes: 69,
-    },
-    {
-      id: 'report-mock-el-nino',
-      articleId: 'el-nino',
-      articleTitle: 'NOAA declares start of El Niño climate phenomenon',
-      articleUrl: '#',
-      carbonIntensity: 88,
-      co2EquivalentKg: 285000,
-      glacierMeltMm: 7.2,
-      forestImpactSqM: -11400,
-      explanation: 'Intensified extreme heatwaves and global temperature spikes, exacerbating pressure on food supplies and ecosystems.',
-      category: 'General',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Climate & Policy',
-      leaderMove: 'Disaster management authorities are calling for emergency funding and resource reallocation to handle crop failures, prolonged droughts, and critical water shortages.',
-      actionNudge: 'Adopt water-saving habits, establish native plant gardens that withstand drought, and prepare emergency plans for extreme heatwaves.',
-      votes: 135,
-    },
-    {
-      id: 'report-mock-sustainable-fuel',
-      articleId: 'sustainable-fuel',
-      articleTitle: 'American Airlines and Google sign record-breaking sustainable aviation fuel deal',
-      articleUrl: '#',
-      carbonIntensity: 55,
-      co2EquivalentKg: 95000,
-      glacierMeltMm: 2.4,
-      forestImpactSqM: -3800,
-      explanation: 'Industrial-scale production of SAF from waste feedstocks, aiming to reduce lifecycle emissions compared to conventional jet fuel.',
-      category: 'Transport',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Aviation & Energy',
-      leaderMove: 'Corporate alliances are scaling up fuel procurement contracts, creating a market signal to incentivize capital investment in biorefineries.',
-      actionNudge: 'Advocate for corporate travel guidelines that require sustainable fuel offsets and monitor lifecycle carbon claims of new fuels.',
-      votes: 104,
-    },
-    {
-      id: 'report-mock-irminger-sea',
-      articleId: 'irminger-sea',
-      articleTitle: 'US government plans to dismantle Irminger Sea ocean moorings',
-      articleUrl: '#',
-      carbonIntensity: 75,
-      co2EquivalentKg: 140000,
-      glacierMeltMm: 3.5,
-      forestImpactSqM: -5600,
-      explanation: 'Loss of critical data on the Atlantic Meridional Overturning Circulation (AMOC), impacting climate predictability for Europe.',
-      category: 'General',
-      analyzedAt: new Date().toISOString(),
-      topic: 'Ecosystems & Tourism',
-      leaderMove: 'Oceanographers and policy groups are warning that funding cuts to marine observation will blind climate modeling at a time when AMOC destabilization risks are rising.',
-      actionNudge: 'Support public funding for climate science, read open-access research papers on ocean health, and write to elected officials urging preservation of monitoring stations.',
-      votes: 82,
-    },
-  ];
+  private modeledBriefs: DashboardBrief[] = [...MODELED_BRIEFS];
 
-  protected readonly topics: TopicFilter[] = ['All', 'Tech/AI', 'Aviation & Energy', 'Ecosystems & Tourism', 'Climate & Policy'];
+  protected readonly topics: TopicFilter[] = [
+    'All',
+    'Tech/AI',
+    'Aviation & Energy',
+    'Ecosystems & Tourism',
+    'Climate & Policy',
+  ];
   protected readonly activeTopic = signal<TopicFilter>('All');
   protected readonly isLiveFeed = signal<boolean>(false);
-  protected readonly reports = signal<DashboardBrief[]>(this.modeledBriefs.filter((r) => r.co2EquivalentKg > 0));
-  protected readonly activeReport = signal<DashboardBrief | null>(this.modeledBriefs.find((r) => r.co2EquivalentKg > 0) ?? null);
+  protected readonly reports = signal<DashboardBrief[]>(
+    this.modeledBriefs.filter((r) => r.co2EquivalentKg > 0),
+  );
+  protected readonly activeReport = signal<DashboardBrief | null>(
+    this.modeledBriefs.find((r) => r.co2EquivalentKg > 0) ?? null,
+  );
   protected readonly loading = signal(false);
   protected readonly error = signal<string | null>(null);
   protected searchQuery = '';
@@ -708,62 +824,80 @@ export class NetImpactFeedComponent implements OnInit {
     { year: 2023, emissions: 37.4 },
     { year: 2024, emissions: 37.4 },
     { year: 2025, emissions: 37.5 },
-    { year: 2026, emissions: 37.6 }
+    { year: 2026, emissions: 37.6 },
   ]);
   protected readonly historySource = signal<string>('Global Carbon Project & IEA');
 
   private readonly platformId = inject(PLATFORM_ID);
   protected readonly isBrowser = isPlatformBrowser(this.platformId);
   private http = inject(HttpClient);
-  private sanitizer = inject(DomSanitizer);
-  private readonly STORAGE_KEY = 'echometrics_protested_reports';
+  private readonly STORAGE_KEY = 'ecometrics_protested_reports';
   protected readonly protestedReportIds = signal<Set<string>>(new Set());
 
   protected readonly dailyTarget = 10.0;
 
   // Static "Green Champions" leaderboard (illustrative data, ranked by weekly CO₂ saved).
-  protected readonly leaderboard: ReadonlyArray<{
-    rank: number;
-    name: string;
-    location: string;
-    co2SavedKg: number;
-    streak: number;
-  }> = [
-    { rank: 1, name: 'Aria Nakamura', location: 'Kyoto', co2SavedKg: 64.2, streak: 28 },
-    { rank: 2, name: "Liam O'Brien", location: 'Dublin', co2SavedKg: 58.9, streak: 21 },
-    { rank: 3, name: 'Zara Okafor', location: 'Lagos', co2SavedKg: 52.4, streak: 19 },
-    { rank: 4, name: 'Noah Schmidt', location: 'Berlin', co2SavedKg: 41.0, streak: 12 },
-    { rank: 5, name: 'Mateo Rossi', location: 'Milan', co2SavedKg: 37.6, streak: 9 },
-  ];
+  protected readonly leaderboard = LEADERBOARD;
 
-  // The current user, sitting far down the global ranking.
-  protected readonly currentUserRank = {
-    rank: 11453,
-    name: 'You',
-    location: 'Your City',
-    co2SavedKg: 8.4,
-    streak: 3,
-  };
+  protected readonly currentUserRank = CURRENT_USER_RANK;
 
   protected medal(rank: number): string {
     return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank.toLocaleString()}`;
   }
 
   protected readonly contributionActions = signal([
-    { id: 'unplug', label: 'Unplug chargers and screens when not in use', co2SavedKg: 0.2, checked: false },
+    {
+      id: 'unplug',
+      label: 'Unplug chargers and screens when not in use',
+      co2SavedKg: 0.2,
+      checked: false,
+    },
     { id: 'lights', label: 'Turn off lights in empty rooms', co2SavedKg: 0.1, checked: false },
-    { id: 'shower', label: 'Take a 5-minute shower instead of a long hot bath', co2SavedKg: 1.5, checked: false },
-    { id: 'transit', label: 'Commute by public train or bus instead of driving', co2SavedKg: 4.8, checked: false },
-    { id: 'bike', label: 'Walk or ride a bike for trips under 2 km', co2SavedKg: 1.2, checked: false },
-    { id: 'coldwash', label: 'Wash laundry at 30°C instead of 60°C', co2SavedKg: 0.6, checked: false },
-    { id: 'dryer', label: 'Air-dry clothes on a rack instead of running the dryer', co2SavedKg: 1.8, checked: false },
-    { id: 'kettle', label: 'Boil only the exact amount of water needed', co2SavedKg: 0.1, checked: false },
+    {
+      id: 'shower',
+      label: 'Take a 5-minute shower instead of a long hot bath',
+      co2SavedKg: 1.5,
+      checked: false,
+    },
+    {
+      id: 'transit',
+      label: 'Commute by public train or bus instead of driving',
+      co2SavedKg: 4.8,
+      checked: false,
+    },
+    {
+      id: 'bike',
+      label: 'Walk or ride a bike for trips under 2 km',
+      co2SavedKg: 1.2,
+      checked: false,
+    },
+    {
+      id: 'coldwash',
+      label: 'Wash laundry at 30°C instead of 60°C',
+      co2SavedKg: 0.6,
+      checked: false,
+    },
+    {
+      id: 'dryer',
+      label: 'Air-dry clothes on a rack instead of running the dryer',
+      co2SavedKg: 1.8,
+      checked: false,
+    },
+    {
+      id: 'kettle',
+      label: 'Boil only the exact amount of water needed',
+      co2SavedKg: 0.1,
+      checked: false,
+    },
     { id: 'cup', label: 'Use a reusable bag and coffee cup', co2SavedKg: 0.1, checked: false },
-    { id: 'lunch', label: 'Choose a vegetarian option for lunch', co2SavedKg: 1.4, checked: false }
+    { id: 'lunch', label: 'Choose a vegetarian option for lunch', co2SavedKg: 1.4, checked: false },
   ]);
 
   protected readonly totalSavedCo2 = computed(() => {
-    return this.contributionActions().reduce((sum, item) => sum + (item.checked ? item.co2SavedKg : 0), 0);
+    return this.contributionActions().reduce(
+      (sum, item) => sum + (item.checked ? item.co2SavedKg : 0),
+      0,
+    );
   });
 
   protected readonly progressPercent = computed(() => {
@@ -783,7 +917,8 @@ export class NetImpactFeedComponent implements OnInit {
   private readonly countryCanvas = viewChild<ElementRef<HTMLCanvasElement>>('countryChartCanvas');
   private readonly mapContainer = viewChild<ElementRef<HTMLElement>>('mapContainer');
 
-  protected readonly svgContent = signal<SafeHtml>('');
+  // Cleaned world-map SVG markup; injected into the DOM via DOMParser (no sanitizer bypass).
+  protected readonly svgMarkup = signal<string>('');
 
   // Global map states
   protected readonly showInsightsMap = signal(true);
@@ -816,27 +951,39 @@ export class NetImpactFeedComponent implements OnInit {
       }
     });
 
-    // Recolor the injected SVG map. Re-runs when the SVG is (re)injected, the data
-    // loads, or the year/selection/hover state changes.
+    // Inject the world map (once) and recolor it. Re-runs after the SVG markup loads,
+    // the map panel renders, the data loads, or the year/selection/hover state changes.
     afterRenderEffect(() => {
       const container = this.mapContainer()?.nativeElement;
-      const svg = this.svgContent();
+      const markup = this.svgMarkup();
       const emissions = this.countryEmissions();
       const year = this.selectedYear();
       const selected = this.selectedCountryCode();
       const hovered = this.hoveredCountryCode();
-      if (container && svg && emissions.length > 0) {
+      if (!container || !markup) return;
+
+      if (!container.querySelector('svg')) {
+        // Parse as a document and adopt the node — avoids innerHTML and any sanitizer bypass.
+        const parsed = new DOMParser()
+          .parseFromString(markup, 'image/svg+xml')
+          .querySelector('svg');
+        if (parsed) {
+          container.appendChild(document.importNode(parsed, true));
+        }
+      }
+
+      if (emissions.length > 0) {
         this.styleMap(container, emissions, year, selected, hovered);
       }
     });
   }
 
   protected readonly selectedCountry = computed(() => {
-    return this.countryEmissions().find(c => c.code === this.selectedCountryCode()) || null;
+    return this.countryEmissions().find((c) => c.code === this.selectedCountryCode()) || null;
   });
 
   protected readonly hoveredCountry = computed(() => {
-    return this.countryEmissions().find(c => c.code === this.hoveredCountryCode()) || null;
+    return this.countryEmissions().find((c) => c.code === this.hoveredCountryCode()) || null;
   });
 
   protected readonly activeCountryDetail = computed(() => {
@@ -846,7 +993,7 @@ export class NetImpactFeedComponent implements OnInit {
   protected readonly activeCountryYearEmissions = computed(() => {
     const country = this.activeCountryDetail();
     if (!country) return 0;
-    const yr = country.history.find(h => h.year === this.selectedYear());
+    const yr = country.history.find((h) => h.year === this.selectedYear());
     return yr ? yr.emissions : 0;
   });
 
@@ -870,7 +1017,9 @@ export class NetImpactFeedComponent implements OnInit {
 
   protected readonly visibleReports = computed(() => {
     const topic = this.activeTopic();
-    return topic === 'All' ? this.reports() : this.reports().filter((report) => report.topic === topic);
+    return topic === 'All'
+      ? this.reports()
+      : this.reports().filter((report) => report.topic === topic);
   });
 
   protected readonly decadalEmissionsSum = computed(() => {
@@ -879,16 +1028,51 @@ export class NetImpactFeedComponent implements OnInit {
     return history.reduce((acc, h) => acc + h.emissions, 0);
   });
 
+  // Plain-language summary of the global trend, used as the chart's accessible label.
+  protected readonly globalChartSummary = computed(() => {
+    const history = this.climateHistory();
+    if (history.length === 0) return 'no data available';
+    const first = history[0];
+    const last = history[history.length - 1];
+    const direction =
+      last.emissions > first.emissions
+        ? 'rising'
+        : last.emissions < first.emissions
+          ? 'falling'
+          : 'flat';
+    return `${direction} from ${first.emissions} in ${first.year} to ${last.emissions} in ${last.year}`;
+  });
+
   protected readonly hoveredSectorIndex = signal<number | null>(null);
 
   protected readonly sectorsList = computed(() => {
     const sum = this.decadalEmissionsSum();
     return [
-      { name: 'Construction & Industry', percentage: 41, color: '#f59e0b', value: (sum * 0.41).toFixed(1) },
-      { name: 'Transport & Logistics', percentage: 25, color: '#3b82f6', value: (sum * 0.25).toFixed(1) },
-      { name: 'Individual Habits', percentage: 18, color: '#10b981', value: (sum * 0.18).toFixed(1) },
-      { name: 'Other Sectors', percentage: 10, color: '#6b7280', value: (sum * 0.10).toFixed(1) },
-      { name: 'Wars, Disputes & Military', percentage: 6, color: '#ef4444', value: (sum * 0.06).toFixed(1) }
+      {
+        name: 'Construction & Industry',
+        percentage: 41,
+        color: '#f59e0b',
+        value: (sum * 0.41).toFixed(1),
+      },
+      {
+        name: 'Transport & Logistics',
+        percentage: 25,
+        color: '#3b82f6',
+        value: (sum * 0.25).toFixed(1),
+      },
+      {
+        name: 'Individual Habits',
+        percentage: 18,
+        color: '#10b981',
+        value: (sum * 0.18).toFixed(1),
+      },
+      { name: 'Other Sectors', percentage: 10, color: '#6b7280', value: (sum * 0.1).toFixed(1) },
+      {
+        name: 'Wars, Disputes & Military',
+        percentage: 6,
+        color: '#ef4444',
+        value: (sum * 0.06).toFixed(1),
+      },
     ];
   });
 
@@ -903,7 +1087,7 @@ export class NetImpactFeedComponent implements OnInit {
         ...sector,
         index,
         strokeDashArray,
-        strokeDashOffset
+        strokeDashOffset,
       };
     });
   });
@@ -928,26 +1112,38 @@ export class NetImpactFeedComponent implements OnInit {
   });
 
   protected readonly airOxygenClaimed = computed(() => {
-    const totalKg = this.visibleReports().reduce((sum, report) => sum + Math.max(report.co2EquivalentKg, 0), 0);
-    const people = Math.round(totalKg / 15.3);
+    const totalKg = this.visibleReports().reduce(
+      (sum, report) => sum + Math.max(report.co2EquivalentKg, 0),
+      0,
+    );
+    const people = Math.round(totalKg / PERSON_OXYGEN_KG_CO2_PER_YEAR);
     return `${people.toLocaleString()} people`;
   });
 
   protected readonly waterGlacierMelt = computed(() => {
-    const totalKg = this.visibleReports().reduce((sum, report) => sum + Math.max(report.co2EquivalentKg, 0), 0);
-    const pools = (totalKg * 3) / 2500000;
+    const totalKg = this.visibleReports().reduce(
+      (sum, report) => sum + Math.max(report.co2EquivalentKg, 0),
+      0,
+    );
+    const pools = (totalKg * GLACIER_MELT_LITRES_PER_KG) / OLYMPIC_POOL_LITRES;
     return `${pools.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 2 })} pools`;
   });
 
   protected readonly landParksErased = computed(() => {
-    const totalKg = this.visibleReports().reduce((sum, report) => sum + Math.max(report.co2EquivalentKg, 0), 0);
-    const parks = totalKg / 36800;
+    const totalKg = this.visibleReports().reduce(
+      (sum, report) => sum + Math.max(report.co2EquivalentKg, 0),
+      0,
+    );
+    const parks = totalKg / CITY_PARK_KG_CO2;
     return `${parks.toLocaleString(undefined, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} parks`;
   });
 
   protected readonly habitCommuteYears = computed(() => {
-    const totalKg = this.visibleReports().reduce((sum, report) => sum + Math.max(report.co2EquivalentKg, 0), 0);
-    const years = Math.round(totalKg / 525.7);
+    const totalKg = this.visibleReports().reduce(
+      (sum, report) => sum + Math.max(report.co2EquivalentKg, 0),
+      0,
+    );
+    const years = Math.round(totalKg / COMMUTE_YEAR_KG_CO2);
     return `${years.toLocaleString()} years`;
   });
 
@@ -983,12 +1179,12 @@ export class NetImpactFeedComponent implements OnInit {
         }
       }
 
-      const storedActions = localStorage.getItem('echometrics_contribution_actions');
+      const storedActions = localStorage.getItem('ecometrics_contribution_actions');
       if (storedActions) {
         try {
           const checkedIds = JSON.parse(storedActions) as string[];
-          this.contributionActions.update(actions =>
-            actions.map(a => ({ ...a, checked: checkedIds.includes(a.id) }))
+          this.contributionActions.update((actions) =>
+            actions.map((a) => ({ ...a, checked: checkedIds.includes(a.id) })),
           );
         } catch (e) {
           console.warn('Failed to parse contribution actions from localStorage', e);
@@ -997,13 +1193,13 @@ export class NetImpactFeedComponent implements OnInit {
     }
 
     // Adjust votes of modeledBriefs based on whether they are protested
-    const adjustedModeled = this.modeledBriefs.map(brief => {
+    const adjustedModeled = this.modeledBriefs.map((brief) => {
       const hasProtested = this.protestedReportIds().has(brief.id);
       const baseVotes = brief.votes || this.getStableVotes(brief.id);
 
       return {
         ...brief,
-        votes: baseVotes + (hasProtested ? 1 : 0)
+        votes: baseVotes + (hasProtested ? 1 : 0),
       };
     });
     this.modeledBriefs = adjustedModeled;
@@ -1028,7 +1224,7 @@ export class NetImpactFeedComponent implements OnInit {
       },
       error: () => {
         console.warn('Could not fetch historical climate data from backend');
-      }
+      },
     });
   }
 
@@ -1054,14 +1250,14 @@ export class NetImpactFeedComponent implements OnInit {
   }
 
   protected toggleAction(id: string): void {
-    this.contributionActions.update(actions =>
-      actions.map(a => (a.id === id ? { ...a, checked: !a.checked } : a))
+    this.contributionActions.update((actions) =>
+      actions.map((a) => (a.id === id ? { ...a, checked: !a.checked } : a)),
     );
     if (this.isBrowser) {
       const checkedIds = this.contributionActions()
-        .filter(a => a.checked)
-        .map(a => a.id);
-      localStorage.setItem('echometrics_contribution_actions', JSON.stringify(checkedIds));
+        .filter((a) => a.checked)
+        .map((a) => a.id);
+      localStorage.setItem('ecometrics_contribution_actions', JSON.stringify(checkedIds));
     }
   }
 
@@ -1105,7 +1301,9 @@ export class NetImpactFeedComponent implements OnInit {
     const incoming = data
       .filter((report) => report.co2EquivalentKg > 0)
       .map((report) => this.toDashboardBrief(report));
-    this.reports.set(incoming.length > 0 ? incoming : this.modeledBriefs.filter((r) => r.co2EquivalentKg > 0));
+    this.reports.set(
+      incoming.length > 0 ? incoming : this.modeledBriefs.filter((r) => r.co2EquivalentKg > 0),
+    );
     this.activeReport.set(this.reports()[0] ?? null);
     this.activeTopic.set('All');
     this.loading.set(false);
@@ -1121,7 +1319,14 @@ export class NetImpactFeedComponent implements OnInit {
     let topic: DashboardBrief['topic'];
 
     // 1. Specific keywords in title take precedence for Tech/AI
-    if (title.includes('data') || title.includes('ai') || title.includes('compute') || title.includes('intelligence') || title.includes('gpu') || title.includes('semiconductor')) {
+    if (
+      title.includes('data') ||
+      title.includes('ai') ||
+      title.includes('compute') ||
+      title.includes('intelligence') ||
+      title.includes('gpu') ||
+      title.includes('semiconductor')
+    ) {
       topic = 'Tech/AI';
     }
     // 2. Map based on the backend category-badge
@@ -1134,11 +1339,31 @@ export class NetImpactFeedComponent implements OnInit {
     }
     // 3. Fallback to title keywords if category is not specified or general
     else {
-      topic = title.includes('airline') || title.includes('aviation') || title.includes('travel') || title.includes('fifa') || title.includes('f1') || title.includes('flight') || title.includes('fuel') || title.includes('oil') || title.includes('gas') || title.includes('coal')
-        ? 'Aviation & Energy'
-        : title.includes('resort') || title.includes('wetland') || title.includes('ecosystem') || title.includes('tourism') || title.includes('moorings') || title.includes('amoc') || title.includes('alban') || title.includes('forest') || title.includes('glacier') || title.includes('reef') || title.includes('wildlife')
-          ? 'Ecosystems & Tourism'
-          : 'Climate & Policy';
+      topic =
+        title.includes('airline') ||
+        title.includes('aviation') ||
+        title.includes('travel') ||
+        title.includes('fifa') ||
+        title.includes('f1') ||
+        title.includes('flight') ||
+        title.includes('fuel') ||
+        title.includes('oil') ||
+        title.includes('gas') ||
+        title.includes('coal')
+          ? 'Aviation & Energy'
+          : title.includes('resort') ||
+              title.includes('wetland') ||
+              title.includes('ecosystem') ||
+              title.includes('tourism') ||
+              title.includes('moorings') ||
+              title.includes('amoc') ||
+              title.includes('alban') ||
+              title.includes('forest') ||
+              title.includes('glacier') ||
+              title.includes('reef') ||
+              title.includes('wildlife')
+            ? 'Ecosystems & Tourism'
+            : 'Climate & Policy';
     }
 
     const baseVotes = this.getStableVotes(report.id);
@@ -1148,8 +1373,10 @@ export class NetImpactFeedComponent implements OnInit {
     return {
       ...report,
       topic,
-      leaderMove: 'Policy, capital allocation, and public messaging can either accelerate cleaner alternatives or normalize higher-carbon defaults.',
-      actionNudge: 'Compare the story with your own energy, travel, and consumption choices before sharing or supporting it.',
+      leaderMove:
+        'Policy, capital allocation, and public messaging can either accelerate cleaner alternatives or normalize higher-carbon defaults.',
+      actionNudge:
+        'Compare the story with your own energy, travel, and consumption choices before sharing or supporting it.',
       votes,
     };
   }
@@ -1192,7 +1419,7 @@ export class NetImpactFeedComponent implements OnInit {
       },
       error: (err) => {
         console.warn('Could not fetch country emissions from backend:', err);
-      }
+      },
     });
   }
 
@@ -1200,21 +1427,30 @@ export class NetImpactFeedComponent implements OnInit {
     const value = (event.target as HTMLInputElement).value;
     this.selectedYear.set(parseInt(value, 10));
   }
+
+  protected onCountrySelect(event: Event): void {
+    this.selectedCountryCode.set((event.target as HTMLSelectElement).value);
+  }
+
   private loadWorldMapSvg(): void {
     this.http.get('world-map.svg', { responseType: 'text' }).subscribe({
       next: (svg) => {
         const cleanedSvg = svg
           .replace(/<\?xml[^>]*\?>/g, '')
           .replace(/<!DOCTYPE[^>]*>/g, '')
+          // Defense-in-depth: strip any active content before injecting the (app-owned) asset.
+          .replace(/<script[\s\S]*?<\/script>/gi, '')
+          .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+          .replace(/javascript:/gi, '')
           .replace('<svg ', '<svg class="world-map-svg" ')
           .replace(/<title>[^<]*<\/title>/g, '')
           .replace(/<desc>[\s\S]*?<\/desc>/g, '');
-        // Just publish the markup; the afterRenderEffect recolors it once it is in the DOM.
-        this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(cleanedSvg));
+        // Publish the markup; the afterRenderEffect injects and recolors it in the DOM.
+        this.svgMarkup.set(cleanedSvg);
       },
       error: (err) => {
         console.error('Failed to load world map SVG:', err);
-      }
+      },
     });
   }
 
@@ -1247,7 +1483,7 @@ export class NetImpactFeedComponent implements OnInit {
     countries: CountryEmissions[],
     year: number,
     selected: string,
-    hovered: string | null
+    hovered: string | null,
   ): void {
     const paths = container.querySelectorAll('path');
     paths.forEach((path) => {
@@ -1318,27 +1554,32 @@ export class NetImpactFeedComponent implements OnInit {
       }
     });
   }
-  private renderGlobalChart(canvas: HTMLCanvasElement, history: { year: number; emissions: number }[]): void {
+  private renderGlobalChart(
+    canvas: HTMLCanvasElement,
+    history: { year: number; emissions: number }[],
+  ): void {
     Chart.getChart(canvas)?.destroy();
 
-    const labels = history.map(h => h.year.toString());
-    const data = history.map(h => h.emissions);
+    const labels = history.map((h) => h.year.toString());
+    const data = history.map((h) => h.emissions);
 
     new Chart(canvas, {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          label: 'Emissions (Gt CO₂)',
-          data,
-          borderColor: '#b91c1c',
-          borderWidth: 2,
-          pointBackgroundColor: '#b91c1c',
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          fill: false,
-          tension: 0.2
-        }]
+        datasets: [
+          {
+            label: 'Emissions (Gt CO₂)',
+            data,
+            borderColor: '#b91c1c',
+            borderWidth: 2,
+            pointBackgroundColor: '#b91c1c',
+            pointRadius: 3,
+            pointHoverRadius: 5,
+            fill: false,
+            tension: 0.2,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -1350,50 +1591,60 @@ export class NetImpactFeedComponent implements OnInit {
             titleFont: { size: 10, weight: 'bold' },
             bodyFont: { size: 10 },
             callbacks: {
-              label: (ctx) => `${ctx.raw} Gt CO₂`
-            }
-          }
+              label: (ctx) => `${ctx.raw} Gt CO₂`,
+            },
+          },
         },
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 8 }, color: '#657064' }
+            ticks: { font: { size: 8 }, color: '#657064' },
           },
           y: {
             grid: { color: 'rgba(0,0,0,0.05)' },
-            ticks: { font: { size: 8 }, color: '#657064' }
-          }
-        }
-      }
+            ticks: { font: { size: 8 }, color: '#657064' },
+          },
+        },
+      },
     });
   }
-  private renderCountryChart(canvas: HTMLCanvasElement, country: CountryEmissions, selectedYr: number): void {
+  private renderCountryChart(
+    canvas: HTMLCanvasElement,
+    country: CountryEmissions,
+    selectedYr: number,
+  ): void {
     Chart.getChart(canvas)?.destroy();
 
-    const labels = country.history.map(h => h.year.toString());
-    const data = country.history.map(h => h.emissions);
+    const labels = country.history.map((h) => h.year.toString());
+    const data = country.history.map((h) => h.emissions);
 
-    const pointRadiuses = country.history.map(h => h.year === selectedYr ? 5 : 2.5);
-    const pointBackgroundColors = country.history.map(h => h.year === selectedYr ? '#ef4444' : '#0284c7');
-    const pointBorderColors = country.history.map(h => h.year === selectedYr ? '#ffffff' : '#0284c7');
-    const pointBorderWidths = country.history.map(h => h.year === selectedYr ? 2 : 1);
+    const pointRadiuses = country.history.map((h) => (h.year === selectedYr ? 5 : 2.5));
+    const pointBackgroundColors = country.history.map((h) =>
+      h.year === selectedYr ? '#ef4444' : '#0284c7',
+    );
+    const pointBorderColors = country.history.map((h) =>
+      h.year === selectedYr ? '#ffffff' : '#0284c7',
+    );
+    const pointBorderWidths = country.history.map((h) => (h.year === selectedYr ? 2 : 1));
 
     new Chart(canvas, {
       type: 'line',
       data: {
         labels,
-        datasets: [{
-          data,
-          borderColor: '#0284c7',
-          borderWidth: 2,
-          pointBackgroundColor: pointBackgroundColors,
-          pointBorderColor: pointBorderColors,
-          pointBorderWidth: pointBorderWidths,
-          pointRadius: pointRadiuses,
-          pointHoverRadius: 6,
-          fill: false,
-          tension: 0.15
-        }]
+        datasets: [
+          {
+            data,
+            borderColor: '#0284c7',
+            borderWidth: 2,
+            pointBackgroundColor: pointBackgroundColors,
+            pointBorderColor: pointBorderColors,
+            pointBorderWidth: pointBorderWidths,
+            pointRadius: pointRadiuses,
+            pointHoverRadius: 6,
+            fill: false,
+            tension: 0.15,
+          },
+        ],
       },
       options: {
         responsive: true,
@@ -1405,22 +1656,21 @@ export class NetImpactFeedComponent implements OnInit {
             titleFont: { size: 9, weight: 'bold' },
             bodyFont: { size: 9 },
             callbacks: {
-              label: (ctx) => `${ctx.raw} Gt CO₂`
-            }
-          }
+              label: (ctx) => `${ctx.raw} Gt CO₂`,
+            },
+          },
         },
         scales: {
           x: {
             grid: { display: false },
-            ticks: { font: { size: 7.5 }, color: '#657064' }
+            ticks: { font: { size: 7.5 }, color: '#657064' },
           },
           y: {
             grid: { color: 'rgba(0,0,0,0.04)' },
-            ticks: { font: { size: 7.5 }, color: '#657064' }
-          }
-        }
-      }
+            ticks: { font: { size: 7.5 }, color: '#657064' },
+          },
+        },
+      },
     });
   }
-
 }

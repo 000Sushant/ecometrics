@@ -13,7 +13,7 @@ function runProcess(command, args, name, envOverrides = {}) {
   return child;
 }
 
-console.log('Starting EchoMetrics full-stack application...');
+console.log('Starting EcoMetrics full-stack application...');
 // Backend runs internally on port 3000
 runProcess('node', ['backend/dist/main/server.js'], 'Backend', { PORT: '3000' });
 // Frontend runs on the container's public PORT (defaults to 8080 on Cloud Run)

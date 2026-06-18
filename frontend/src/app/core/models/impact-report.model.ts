@@ -1,4 +1,10 @@
-export type EcoImpactCategory = 'Energy' | 'Transport' | 'Industry' | 'Agriculture' | 'Deforestation' | 'General';
+export type EcoImpactCategory =
+  | 'Energy'
+  | 'Transport'
+  | 'Industry'
+  | 'Agriculture'
+  | 'Deforestation'
+  | 'General';
 
 export interface ImpactReport {
   id: string;

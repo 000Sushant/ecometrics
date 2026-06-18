@@ -22,13 +22,19 @@ const PORT = process.env.PORT || 3000;
 
 // 1. Security Middleware
 app.use(helmet());
+// Restrict CORS to an explicit allow-list (never the wildcard "*"). Configure production
+// origins via ALLOWED_ORIGINS; falls back to the local dev origin only.
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map((origin) => origin.trim())
+  : ['http://localhost:4200'];
 app.use(
   cors({
-    origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
   })
 );
-app.use(express.json());
+// Cap request bodies to mitigate denial-of-service via oversized payloads.
+app.use(express.json({ limit: '16kb' }));
 
 // 2. Rate Limiting
 const apiLimiter = rateLimit({
@@ -218,12 +224,11 @@ app.get('/api/country-emissions', (req: Request, res: Response) => {
 });
 
 // 6. Global Error Handler
+// Log the full error server-side, but never leak internal details (messages, stack
+// traces) to the client.
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   console.error('Unhandled request error:', err);
-  res.status(500).json({
-    error: 'An internal server error occurred.',
-    message: err.message,
-  });
+  res.status(500).json({ error: 'An internal server error occurred.' });
 });
 
 export function startServer(port: number | string = PORT): Server {

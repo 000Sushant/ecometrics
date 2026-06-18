@@ -13,6 +13,16 @@ const browserDistFolder = join(import.meta.dirname, '../browser');
 const app = express();
 const angularApp = new AngularNodeAppEngine();
 
+// Baseline security response headers (kept CSP-free so Angular hydration is not broken).
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(), microphone=(), camera=()');
+  res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  next();
+});
+
 // Proxy API requests to the backend server
 const apiTarget = process.env['API_URL'] || 'http://localhost:3000';
 app.use(
@@ -20,7 +30,7 @@ app.use(
   createProxyMiddleware({
     target: apiTarget,
     changeOrigin: true,
-  })
+  }),
 );
 
 /**

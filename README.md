@@ -1,8 +1,8 @@
-# 🌍 EchoMetrics
+# 🌍 EcoMetrics
 
-> **See what global moves cost the planet.** EchoMetrics turns abstract climate news into human‑scale impact you can actually feel.
+> **Understand, track, and shrink your carbon footprint.** EcoMetrics turns abstract climate data into human‑scale impact you can actually feel — and act on.
 
-EchoMetrics is a full‑stack **climate impact & news intelligence dashboard**. It ingests real‑world climate, energy, and environmental news, uses Google's **Gemini** model to estimate the ecological cost of each event, and translates that cost into relatable comparisons — *oxygen claimed from people, glacier ice melted, city‑park cooling erased, and lifetime commute pollution* — alongside interactive global emissions analytics.
+EcoMetrics is a full‑stack **personal carbon‑footprint dashboard**. You **estimate your weekly footprint**, **commit to simple daily actions**, and get **personalized insights** on where your biggest wins are — all set against real‑world climate context. It uses Google's **Gemini** model to score the carbon cost of current events and translates every number into relatable comparisons (*oxygen claimed from people, glacier ice melted, city‑park cooling erased, and lifetime commute pollution*) so the scale is impossible to ignore.
 
 <p align="center">
   <img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5.x-3178C6?logo=typescript&logoColor=white">
@@ -34,23 +34,28 @@ EchoMetrics is a full‑stack **climate impact & news intelligence dashboard**. 
 
 ---
 
+> **Problem statement:** *Design a solution that helps individuals understand, track, and reduce their carbon footprint through simple actions and personalized insights.*
+
 ## 🎯 The Problem
 
-Climate reporting is **abstract**. A headline like *"new data‑center cluster will emit 185,000 t of CO₂"* means almost nothing to a typical reader — the numbers are too large, too remote, and too easy to scroll past. As a result:
+For most people, their carbon footprint is **invisible and abstract**. Numbers like *"185,000 kg of CO₂"* mean nothing at human scale, so:
 
-- People struggle to **compare** the relative impact of different events (a sporting mega‑event vs. an AI build‑out vs. a policy rollback).
-- Positive and negative climate stories blur together, making it hard to see where the real carbon burden is being created.
-- Raw emissions figures rarely translate into **personal or civic action**.
+- People can't easily **understand** how big their own footprint is or where it comes from.
+- There's no simple way to **track** progress or see whether small changes add up.
+- Advice is generic — rarely a **personalized** "here's *your* biggest win."
 
 ## 💡 The Solution
 
-EchoMetrics closes the gap between *data* and *intuition*:
+EcoMetrics maps directly onto the four things an individual needs — **understand, track, reduce, and get personalized insight**:
 
-1. **Curate** — pulls fresh climate/energy/environment news from NewsAPI.
-2. **Analyze** — sends each article to **Gemini**, which estimates carbon intensity, CO₂‑equivalent, glacier melt, forest impact, a category, and whether the event is globally significant.
-3. **Filter** — automatically discards positive/green stories and low‑impact noise, keeping only **high‑emission, globally relevant** events (and caches the verdict so nothing is re‑analyzed).
-4. **Translate** — converts CO₂‑equivalent into four **human‑scale metrics** everyone understands.
-5. **Visualize** — presents it all on a reactive dashboard with KPIs, a sector breakdown, a 10‑year global trend, an interactive world emissions map, and a community "protest" signal.
+| Goal | How EcoMetrics delivers it |
+| --- | --- |
+| **Understand** | A **personal footprint estimator** turns a few inputs (commute, diet, home energy) into your estimated weekly/annual CO₂, broken down by source and compared to the average. |
+| **Track** | Your estimate and daily pledge are **persisted across sessions**; a **Daily Green Pledge** progress bar and a **Green Champions leaderboard** show momentum over time. |
+| **Reduce** | A checklist of **simple daily actions** (each with its CO₂ saving) lets you commit and watch your pledged savings grow. |
+| **Personalized insights** | The estimator identifies **your** single biggest source and recommends the highest‑impact change, with the kg/week it would save. |
+
+Every figure is grounded in **real‑world climate context**: Gemini scores the carbon cost of current events and the dashboard renders human‑scale comparisons, a sector breakdown, a 10‑year global trend, and an interactive emissions map — so personal choices are framed against the bigger picture.
 
 ### The four human‑scale metrics
 
@@ -65,13 +70,23 @@ EchoMetrics closes the gap between *data* and *intuition*:
 
 ## ✨ Key Features
 
+**Personal — understand, track, reduce**
+- **Footprint estimator** — estimate your weekly/annual CO₂ from commute, diet, and home energy, with a per‑source breakdown and an average comparison.
+- **Personalized insight** — pinpoints your single biggest source and the highest‑impact change, with the kg/week it saves.
+- **Daily Green Pledge** — a checklist of simple actions (each with its CO₂ saving) and a progress bar toward your daily target.
+- **Green Champions leaderboard** — gamified ranking that shows where you stand and keeps momentum.
+- **Persistent tracking** — footprint inputs, pledges, and protests are saved in `localStorage` across sessions.
+
+**Climate context — powered by AI**
 - **AI‑powered impact scoring** — Gemini 2.5 Flash with a strict JSON contract validated by [Zod](https://zod.dev) (malformed or out‑of‑range responses are rejected).
-- **Negative‑event filtering** — green/offset stories are skipped server‑side to keep the feed focused on what's increasing the carbon burden.
-- **Smart caching** — every article verdict (including "rejected") is cached in Firestore, so the Gemini API is never billed twice for the same story, and the feed self‑populates in the background when sparse.
-- **Interactive analytics** — sector‑share donut, 10‑year global carbon trend (Chart.js), and a scrubable SVG **world emissions map** with per‑country trend charts.
-- **Community signal** — readers can "protest" an event; votes are persisted in `localStorage` and ranked by topic pressure.
+- **Smart caching** — every article verdict is cached in Firestore, so Gemini is never billed twice and the feed self‑populates in the background when sparse.
+- **Interactive analytics** — sector‑share donut, 10‑year global carbon trend (Chart.js), and a scrubable SVG **emissions map** with a keyboard‑accessible country selector.
+
+**Engineering quality**
+- **Accessible (WCAG AA)** — keyboard‑operable controls, visible focus, ARIA labels, and screen‑reader data tables for every chart.
+- **Secure by default** — Helmet, strict CORS allow‑listing, request‑body limits, generic error responses, security headers, and no `innerHTML`/sanitizer bypass.
 - **Offline‑first demo mode** — runs with zero API keys using bundled mock data, so the app is always presentable.
-- **Resilient by design** — Helmet, CORS allow‑listing, rate limiting, graceful fallbacks, and a 100%‑covered backend.
+- **100% test coverage** — backend (Jest, enforced threshold) and all measured frontend units.
 
 ---
 
@@ -160,7 +175,7 @@ The **frontend** uses Angular standalone components with **Signals** for fine‑
 ## 📁 Project Structure
 
 ```
-echometrics/
+ecometrics/
 ├── backend/                        # Express + TypeScript API (Clean Architecture)
 │   ├── src/
 │   │   ├── domain/entities/        # NewsArticle, ImpactReport
@@ -232,8 +247,8 @@ Base URL: `http://localhost:3000`. All `/api/*` routes are rate‑limited to **1
 ### 1. Install
 
 ```bash
-git clone <your-repo-url> echometrics
-cd echometrics
+git clone <your-repo-url> ecometrics
+cd ecometrics
 npm install            # installs all workspaces (backend + frontend)
 ```
 
@@ -315,12 +330,12 @@ Both apps ship with multi‑stage **Dockerfiles** (Node 22 Alpine, port `8080`),
 
 ```bash
 # Backend
-docker build -t echometrics-api ./backend
-docker run -p 8080:8080 --env-file ./backend/.env echometrics-api
+docker build -t ecometrics-api ./backend
+docker run -p 8080:8080 --env-file ./backend/.env ecometrics-api
 
 # Frontend (SSR)
-docker build -t echometrics-web ./frontend
-docker run -p 8080:8080 echometrics-web
+docker build -t ecometrics-web ./frontend
+docker run -p 8080:8080 ecometrics-web
 ```
 
 Production builds without Docker:

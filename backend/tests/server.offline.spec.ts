@@ -4,7 +4,7 @@ jest.mock('dotenv', () => ({ config: jest.fn(), default: { config: jest.fn() } }
 
 // Offline mode must be selected before the server module initializes.
 process.env.LIVE = 'false';
-delete process.env.ALLOWED_ORIGINS; // exercise the default CORS origin ('*') branch
+delete process.env.ALLOWED_ORIGINS; // exercise the default CORS origin (localhost) branch
 delete process.env.PORT; // exercise the default-port branch
 delete process.env.NEWS_API_KEY;
 delete process.env.GEMINI_API_KEY;

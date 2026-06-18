@@ -35,7 +35,6 @@ describe('Server API (initialization failure)', () => {
   it('GET /api/reports surfaces a 500 through the global error handler', async () => {
     const res = await request(app).get('/api/reports');
     expect(res.status).toBe(500);
-    expect(res.body).toHaveProperty('error', 'An internal server error occurred.');
-    expect(res.body).toHaveProperty('message', 'Firestore unavailable');
+    expect(res.body).toEqual({ error: 'An internal server error occurred.' });
   });
 });
