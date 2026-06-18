@@ -72,9 +72,10 @@ describe('NetImpactFeedComponent', () => {
     expect(c.landParksErased()).toMatch(/parks$/);
     expect(c.habitCommuteYears()).toMatch(/years$/);
     expect(c.topicVotes().length).toBe(4);
-    expect(c.topicVotes().every((t: { percentage: number }) => t.percentage <= 100)).toBe(true);
-    expect(c.activeLeaderMoves().length).toBeLessThanOrEqual(4);
-    expect(c.activeActionNudges().length).toBeLessThanOrEqual(4);
+    expect(c.contributionActions().length).toBe(10);
+    expect(c.totalSavedCo2()).toBe(0);
+    c.toggleAction('lights');
+    expect(c.totalSavedCo2()).toBe(0.1);
   });
 
   it('derives sector breakdown and donut centre labels from decadal emissions', () => {

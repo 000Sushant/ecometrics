@@ -1,5 +1,5 @@
 import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, computed, inject, OnInit, AfterViewInit, signal, effect, PLATFORM_ID } from '@angular/core';
+import { Component, computed, inject, OnInit, signal, PLATFORM_ID, ElementRef, viewChild, afterRenderEffect } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -190,7 +190,7 @@ interface DashboardBrief extends ImpactReport {
                 <span class="history-years">2017 - 2026</span>
               </div>
               <div class="chart-container document-style" style="position: relative; height: 80px;">
-                <canvas id="globalHistoryChart"></canvas>
+                <canvas #globalChartCanvas></canvas>
               </div>
               <span class="source-caption">Source: {{ historySource() }}</span>
             </div>
@@ -227,7 +227,15 @@ interface DashboardBrief extends ImpactReport {
         <div class="map-workspace">
           <!-- Left/Center: SVG World Map -->
           <div class="map-canvas-wrapper" style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;">
-            <div [innerHTML]="svgContent()" class="world-map-container" style="width: 100%;"></div>
+            <div
+              #mapContainer
+              [innerHTML]="svgContent()"
+              class="world-map-container"
+              style="width: 100%;"
+              (click)="onMapClick($event)"
+              (mouseover)="onMapHover($event)"
+              (mouseleave)="onMapLeave()"
+            ></div>
           </div>
 
           <!-- Right side: Detail Panel -->
@@ -258,7 +266,7 @@ interface DashboardBrief extends ImpactReport {
                 <span>10-Year Trend (2017-2026)</span>
               </div>
               <div class="mini-trend-chart" style="position: relative; height: 70px; width: 100%;">
-                <canvas id="countryTrendChart"></canvas>
+                <canvas #countryChartCanvas></canvas>
               </div>
             </div>
 
@@ -389,31 +397,107 @@ interface DashboardBrief extends ImpactReport {
             </div>
           </section>
 
-          <section class="panel leader-card">
-            <h2 class="panel-title">Leader Move Lens</h2>
-            <div class="leader-list">
-              <div class="leader-item" *ngFor="let item of activeLeaderMoves()">
-                <strong>{{ item.topic }}</strong>
-                <span>{{ item.leaderMove }}</span>
+          <section class="panel leaderboard-card">
+            <div class="panel-header">
+              <div>
+                <h2 class="panel-title">Green Champions Leaderboard</h2>
+                <p class="panel-subtitle">This week's top pledgers, ranked by CO₂ saved.</p>
+              </div>
+            </div>
+            <div class="leaderboard-list">
+              <div class="leaderboard-row" *ngFor="let entry of leaderboard">
+                <span class="leaderboard-rank" [class.top]="entry.rank <= 3">{{ medal(entry.rank) }}</span>
+                <div class="leaderboard-identity">
+                  <span class="leaderboard-name">{{ entry.name }}</span>
+                  <span class="leaderboard-meta">{{ entry.location }} · {{ entry.streak }}-day streak</span>
+                </div>
+                <strong class="leaderboard-score">{{ entry.co2SavedKg.toFixed(1) }} kg</strong>
+              </div>
+
+              <div class="leaderboard-gap" aria-hidden="true">⋯</div>
+
+              <div class="leaderboard-row current-user">
+                <span class="leaderboard-rank">{{ medal(currentUserRank.rank) }}</span>
+                <div class="leaderboard-identity">
+                  <span class="leaderboard-name">{{ currentUserRank.name }}</span>
+                  <span class="leaderboard-meta">{{ currentUserRank.location }} · {{ currentUserRank.streak }}-day streak</span>
+                </div>
+                <strong class="leaderboard-score">{{ currentUserRank.co2SavedKg.toFixed(1) }} kg</strong>
               </div>
             </div>
           </section>
 
-          <section class="panel action-card">
-            <h2 class="panel-title">Simple Actions</h2>
-            <div class="action-list">
-              <div class="action-item" *ngFor="let item of activeActionNudges()">
-                <strong>{{ item.topic }}</strong>
-                <span>{{ item.actionNudge }}</span>
+          <section class="panel contribution-card">
+            <h2 class="panel-title">My Daily Green Pledge</h2>
+            <p class="panel-subtitle">Your daily promise to the planet. Commit to small actions today for a greener tomorrow.</p>
+            
+            <div class="progress-container">
+              <div class="progress-labels">
+                <span>Pledge Progress: {{ totalSavedCo2().toFixed(1) }} / {{ dailyTarget }} kg CO₂</span>
+                <span>{{ progressPercent() }}%</span>
               </div>
+              <div class="progress-track">
+                <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+              </div>
+            </div>
+
+            <div class="contribution-list">
+              <div 
+                *ngFor="let item of contributionActions()" 
+                class="contribution-item" 
+                [class.checked]="item.checked"
+                (click)="toggleAction(item.id)"
+              >
+                <input 
+                  type="checkbox" 
+                  [checked]="item.checked"
+                  (click)="$event.stopPropagation(); toggleAction(item.id)"
+                />
+                <div class="contribution-item-text">
+                  <span class="contribution-item-label">{{ item.label }}</span>
+                  <span class="contribution-item-saving">
+                    Estimated savings: {{ item.co2SavedKg }} kg CO₂/day
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div class="contribution-summary">
+              <span>Total Pledged Savings:</span>
+              <strong>{{ totalSavedCo2().toFixed(1) }} kg CO₂</strong>
             </div>
           </section>
         </aside>
       </section>
+
+      <footer class="dashboard-footer">
+        <p>Made with 💚 by <a href="https://000sushant.github.io/sushant-portfolio/" target="_blank" rel="noopener">Sushant Kumar</a></p>
+        <div class="footer-links">
+          <a href="https://000sushant.github.io/sushant-portfolio/" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
+              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+            </svg>
+            Portfolio
+          </a>
+          <a href="https://www.linkedin.com/in/sushant--kumar/" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"/>
+              <circle cx="4" cy="4" r="2"/>
+            </svg>
+            LinkedIn
+          </a>
+          <a href="https://github.com/000Sushant" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display: inline-block; vertical-align: middle;">
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>
+            </svg>
+            GitHub
+          </a>
+        </div>
+      </footer>
     </main>
   `,
 })
-export class NetImpactFeedComponent implements OnInit, AfterViewInit {
+export class NetImpactFeedComponent implements OnInit {
   private impactService = inject(ImpactService);
 
   private modeledBriefs: DashboardBrief[] = [
@@ -630,11 +714,61 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
 
   private readonly platformId = inject(PLATFORM_ID);
   protected readonly isBrowser = isPlatformBrowser(this.platformId);
-  protected readonly viewInitialized = signal(false);
   private http = inject(HttpClient);
   private sanitizer = inject(DomSanitizer);
   private readonly STORAGE_KEY = 'echometrics_protested_reports';
   protected readonly protestedReportIds = signal<Set<string>>(new Set());
+
+  protected readonly dailyTarget = 10.0;
+
+  // Static "Green Champions" leaderboard (illustrative data, ranked by weekly CO₂ saved).
+  protected readonly leaderboard: ReadonlyArray<{
+    rank: number;
+    name: string;
+    location: string;
+    co2SavedKg: number;
+    streak: number;
+  }> = [
+    { rank: 1, name: 'Aria Nakamura', location: 'Kyoto', co2SavedKg: 64.2, streak: 28 },
+    { rank: 2, name: "Liam O'Brien", location: 'Dublin', co2SavedKg: 58.9, streak: 21 },
+    { rank: 3, name: 'Zara Okafor', location: 'Lagos', co2SavedKg: 52.4, streak: 19 },
+    { rank: 4, name: 'Noah Schmidt', location: 'Berlin', co2SavedKg: 41.0, streak: 12 },
+    { rank: 5, name: 'Mateo Rossi', location: 'Milan', co2SavedKg: 37.6, streak: 9 },
+  ];
+
+  // The current user, sitting far down the global ranking.
+  protected readonly currentUserRank = {
+    rank: 11453,
+    name: 'You',
+    location: 'Your City',
+    co2SavedKg: 8.4,
+    streak: 3,
+  };
+
+  protected medal(rank: number): string {
+    return rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank.toLocaleString()}`;
+  }
+
+  protected readonly contributionActions = signal([
+    { id: 'unplug', label: 'Unplug chargers and screens when not in use', co2SavedKg: 0.2, checked: false },
+    { id: 'lights', label: 'Turn off lights in empty rooms', co2SavedKg: 0.1, checked: false },
+    { id: 'shower', label: 'Take a 5-minute shower instead of a long hot bath', co2SavedKg: 1.5, checked: false },
+    { id: 'transit', label: 'Commute by public train or bus instead of driving', co2SavedKg: 4.8, checked: false },
+    { id: 'bike', label: 'Walk or ride a bike for trips under 2 km', co2SavedKg: 1.2, checked: false },
+    { id: 'coldwash', label: 'Wash laundry at 30°C instead of 60°C', co2SavedKg: 0.6, checked: false },
+    { id: 'dryer', label: 'Air-dry clothes on a rack instead of running the dryer', co2SavedKg: 1.8, checked: false },
+    { id: 'kettle', label: 'Boil only the exact amount of water needed', co2SavedKg: 0.1, checked: false },
+    { id: 'cup', label: 'Use a reusable bag and coffee cup', co2SavedKg: 0.1, checked: false },
+    { id: 'lunch', label: 'Choose a vegetarian option for lunch', co2SavedKg: 1.4, checked: false }
+  ]);
+
+  protected readonly totalSavedCo2 = computed(() => {
+    return this.contributionActions().reduce((sum, item) => sum + (item.checked ? item.co2SavedKg : 0), 0);
+  });
+
+  protected readonly progressPercent = computed(() => {
+    return Math.min(100, Math.round((this.totalSavedCo2() / this.dailyTarget) * 100));
+  });
 
   private getStableVotes(id: string): number {
     let hash = 0;
@@ -643,8 +777,11 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
     }
     return (Math.abs(hash) % 150) + 10;
   }
-  private globalChart: Chart | null = null;
-  private countryChart: Chart | null = null;
+  // View queries: these signals update reactively once the elements are actually
+  // rendered, so chart/map setup never races against a not-yet-painted DOM.
+  private readonly globalCanvas = viewChild<ElementRef<HTMLCanvasElement>>('globalChartCanvas');
+  private readonly countryCanvas = viewChild<ElementRef<HTMLCanvasElement>>('countryChartCanvas');
+  private readonly mapContainer = viewChild<ElementRef<HTMLElement>>('mapContainer');
 
   protected readonly svgContent = signal<SafeHtml>('');
 
@@ -655,56 +792,41 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
   protected readonly selectedCountryCode = signal<string>('IN');
   protected readonly hoveredCountryCode = signal<string | null>(null);
   constructor() {
-    effect(() => {
+    // afterRenderEffect runs only in the browser and only *after* the DOM has been
+    // painted, re-running when any signal it reads changes. This replaces the previous
+    // setTimeout + document.getElementById guesswork that caused the map/charts to
+    // intermittently fail to initialize.
+
+    // Global 10-year trend chart (its canvas is always rendered in the hero).
+    afterRenderEffect(() => {
+      const canvas = this.globalCanvas()?.nativeElement;
       const history = this.climateHistory();
-      const initialized = this.viewInitialized();
-      if (this.isBrowser && initialized && history.length > 0) {
-        setTimeout(() => {
-          this.initGlobalChart(history);
-        }, 0);
+      if (canvas && history.length > 0) {
+        this.renderGlobalChart(canvas, history);
       }
     });
 
-    effect(() => {
-      const showMap = this.showInsightsMap();
-      const activeCountry = this.activeCountryDetail();
-      const selectedYr = this.selectedYear();
-      const initialized = this.viewInitialized();
-
-      if (this.isBrowser && initialized && showMap && activeCountry) {
-        setTimeout(() => {
-          this.initCountryChart(activeCountry, selectedYr);
-        }, 0);
+    // Per-country trend chart (its canvas only exists while a country is selected).
+    afterRenderEffect(() => {
+      const canvas = this.countryCanvas()?.nativeElement;
+      const country = this.activeCountryDetail();
+      const year = this.selectedYear();
+      if (canvas && country) {
+        this.renderCountryChart(canvas, country, year);
       }
     });
 
-    effect(() => {
-      const showMap = this.showInsightsMap();
+    // Recolor the injected SVG map. Re-runs when the SVG is (re)injected, the data
+    // loads, or the year/selection/hover state changes.
+    afterRenderEffect(() => {
+      const container = this.mapContainer()?.nativeElement;
       const svg = this.svgContent();
       const emissions = this.countryEmissions();
-      const initialized = this.viewInitialized();
-
-      if (this.isBrowser && initialized && showMap && svg && emissions.length > 0) {
-        setTimeout(() => {
-          this.attachMapEventListeners();
-          this.updateSvgMapStyles();
-        }, 50);
-      }
-    });
-
-    effect(() => {
-      const showMap = this.showInsightsMap();
       const year = this.selectedYear();
       const selected = this.selectedCountryCode();
       const hovered = this.hoveredCountryCode();
-      const emissions = this.countryEmissions();
-      const svg = this.svgContent();
-      const initialized = this.viewInitialized();
-
-      if (this.isBrowser && initialized && showMap && svg && emissions.length > 0) {
-        setTimeout(() => {
-          this.updateSvgMapStyles();
-        }, 0);
+      if (container && svg && emissions.length > 0) {
+        this.styleMap(container, emissions, year, selected, hovered);
       }
     });
   }
@@ -849,9 +971,6 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
     }));
   });
 
-  protected readonly activeLeaderMoves = computed(() => this.visibleReports().slice(0, 4));
-  protected readonly activeActionNudges = computed(() => this.visibleReports().slice(0, 4));
-
   ngOnInit(): void {
     if (this.isBrowser) {
       const stored = localStorage.getItem(this.STORAGE_KEY);
@@ -861,6 +980,18 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
           this.protestedReportIds.set(new Set(ids));
         } catch (e) {
           console.warn('Failed to parse protested reports from localStorage', e);
+        }
+      }
+
+      const storedActions = localStorage.getItem('echometrics_contribution_actions');
+      if (storedActions) {
+        try {
+          const checkedIds = JSON.parse(storedActions) as string[];
+          this.contributionActions.update(actions =>
+            actions.map(a => ({ ...a, checked: checkedIds.includes(a.id) }))
+          );
+        } catch (e) {
+          console.warn('Failed to parse contribution actions from localStorage', e);
         }
       }
     }
@@ -887,10 +1018,6 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
     if (this.isBrowser) {
       this.loadWorldMapSvg();
     }
-  }
-
-  ngAfterViewInit(): void {
-    this.viewInitialized.set(true);
   }
 
   private fetchClimateHistory(): void {
@@ -924,6 +1051,18 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
     this.activeTopic.set('All');
     this.activeReport.set(filtered[0] ?? null);
     this.isLiveFeed.set(false);
+  }
+
+  protected toggleAction(id: string): void {
+    this.contributionActions.update(actions =>
+      actions.map(a => (a.id === id ? { ...a, checked: !a.checked } : a))
+    );
+    if (this.isBrowser) {
+      const checkedIds = this.contributionActions()
+        .filter(a => a.checked)
+        .map(a => a.id);
+      localStorage.setItem('echometrics_contribution_actions', JSON.stringify(checkedIds));
+    }
   }
 
   protected triggerAnalysis(): void {
@@ -1070,50 +1209,47 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
           .replace('<svg ', '<svg class="world-map-svg" ')
           .replace(/<title>[^<]*<\/title>/g, '')
           .replace(/<desc>[\s\S]*?<\/desc>/g, '');
+        // Just publish the markup; the afterRenderEffect recolors it once it is in the DOM.
         this.svgContent.set(this.sanitizer.bypassSecurityTrustHtml(cleanedSvg));
-
-        // Wait for DOM to render
-        setTimeout(() => {
-          this.attachMapEventListeners();
-          this.updateSvgMapStyles();
-        }, 50);
       },
       error: (err) => {
         console.error('Failed to load world map SVG:', err);
       }
     });
   }
-  private attachMapEventListeners(): void {
-    if (!this.isBrowser) return;
-    const svgEl = document.getElementById('world-map');
-    if (!svgEl) return;
 
-    const countries = this.countryEmissions().map(c => c.code.toLowerCase());
-
-    countries.forEach((id) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      const code = id.toUpperCase();
-
-      el.addEventListener('mouseenter', () => this.hoveredCountryCode.set(code));
-      el.addEventListener('mouseleave', () => this.hoveredCountryCode.set(null));
-      el.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.selectedCountryCode.set(code);
-      });
-    });
+  /** Resolves the ISO country code for a delegated map event, or null if not a tracked country. */
+  private countryCodeFromEvent(event: Event): string | null {
+    const target = event.target as Element | null;
+    const el = target?.closest('[id]');
+    if (!el) return null;
+    const code = el.id.toUpperCase();
+    return this.countryEmissions().some((c) => c.code === code) ? code : null;
   }
-  private updateSvgMapStyles(): void {
-    if (!this.isBrowser) return;
-    const svgEl = document.getElementById('world-map');
-    if (!svgEl) return;
 
-    const countries = this.countryEmissions();
-    const year = this.selectedYear();
-    const selected = this.selectedCountryCode();
-    const hovered = this.hoveredCountryCode();
+  protected onMapClick(event: Event): void {
+    const code = this.countryCodeFromEvent(event);
+    if (code) {
+      this.selectedCountryCode.set(code);
+    }
+  }
 
-    const paths = svgEl.querySelectorAll('path');
+  protected onMapHover(event: Event): void {
+    this.hoveredCountryCode.set(this.countryCodeFromEvent(event));
+  }
+
+  protected onMapLeave(): void {
+    this.hoveredCountryCode.set(null);
+  }
+
+  private styleMap(
+    container: HTMLElement,
+    countries: CountryEmissions[],
+    year: number,
+    selected: string,
+    hovered: string | null
+  ): void {
+    const paths = container.querySelectorAll('path');
     paths.forEach((path) => {
       try {
         let code = '';
@@ -1182,19 +1318,13 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
       }
     });
   }
-  private initGlobalChart(history: { year: number; emissions: number }[]): void {
-    const canvas = document.getElementById('globalHistoryChart') as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const existingChart = Chart.getChart(canvas);
-    if (existingChart) {
-      existingChart.destroy();
-    }
+  private renderGlobalChart(canvas: HTMLCanvasElement, history: { year: number; emissions: number }[]): void {
+    Chart.getChart(canvas)?.destroy();
 
     const labels = history.map(h => h.year.toString());
     const data = history.map(h => h.emissions);
 
-    this.globalChart = new Chart(canvas, {
+    new Chart(canvas, {
       type: 'line',
       data: {
         labels,
@@ -1237,14 +1367,8 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
       }
     });
   }
-  private initCountryChart(country: CountryEmissions, selectedYr: number): void {
-    const canvas = document.getElementById('countryTrendChart') as HTMLCanvasElement;
-    if (!canvas) return;
-
-    const existingChart = Chart.getChart(canvas);
-    if (existingChart) {
-      existingChart.destroy();
-    }
+  private renderCountryChart(canvas: HTMLCanvasElement, country: CountryEmissions, selectedYr: number): void {
+    Chart.getChart(canvas)?.destroy();
 
     const labels = country.history.map(h => h.year.toString());
     const data = country.history.map(h => h.emissions);
@@ -1254,7 +1378,7 @@ export class NetImpactFeedComponent implements OnInit, AfterViewInit {
     const pointBorderColors = country.history.map(h => h.year === selectedYr ? '#ffffff' : '#0284c7');
     const pointBorderWidths = country.history.map(h => h.year === selectedYr ? 2 : 1);
 
-    this.countryChart = new Chart(canvas, {
+    new Chart(canvas, {
       type: 'line',
       data: {
         labels,
