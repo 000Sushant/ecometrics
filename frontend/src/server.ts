@@ -6,7 +6,8 @@ import {
 } from '@angular/ssr/node';
 import express from 'express';
 import { join } from 'node:path';
-import { createProxyMiddleware } from 'http-proxy-middleware';
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 
 const browserDistFolder = join(import.meta.dirname, '../browser');
 
@@ -23,30 +24,32 @@ app.use((req, res, next) => {
   next();
 });
 
-const apiTarget = process.env['API_URL'] || 'http://localhost:3000';
-app.use(
-  createProxyMiddleware({
-    pathFilter: '/api',
-    target: apiTarget,
-    changeOrigin: true,
-  }),
-);
+const apiTarget = new URL(process.env['API_URL'] || 'http://localhost:3000');
+const proxyRequest = apiTarget.protocol === 'https:' ? httpsRequest : httpRequest;
 
-/**
- * Example Express Rest API endpoints can be defined here.
- * Uncomment and define endpoints as necessary.
- *
- * Example:
- * ```ts
- * app.get('/api/{*splat}', (req, res) => {
- *   // Handle API request
- * });
- * ```
- */
+app.use('/api', (req, res, next) => {
+  const upstream = proxyRequest(
+    {
+      protocol: apiTarget.protocol,
+      hostname: apiTarget.hostname,
+      port: apiTarget.port,
+      method: req.method,
+      path: req.originalUrl,
+      headers: { ...req.headers, host: apiTarget.host },
+    },
+    (upstreamRes) => {
+      res.writeHead(upstreamRes.statusCode ?? 502, upstreamRes.headers);
+      upstreamRes.pipe(res);
+    },
+  );
 
-/**
- * Serve static files from /browser
- */
+  upstream.setTimeout(30_000, () => upstream.destroy(new Error('Upstream request timed out')));
+  req.on('aborted', () => upstream.destroy());
+  upstream.on('error', next);
+
+  req.pipe(upstream);
+});
+
 app.use(
   express.static(browserDistFolder, {
     maxAge: '1y',
