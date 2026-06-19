@@ -366,6 +366,41 @@ a {
   margin-top: 12px;
 }
 
+.main-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sidebar-wrapper {
+  position: relative;
+}
+
+.sidebar-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+@media (min-width: 1121px) {
+  .sidebar-wrapper {
+    min-height: 820px;
+  }
+
+  .sidebar-stack {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+  }
+}
+
+.sidebar-stack app-footprint {
+  margin-bottom: 0;
+}
+
 .panel {
   border: 1px solid var(--color-line);
   border-radius: var(--radius);
@@ -620,12 +655,39 @@ a {
 }
 
 .leaderboard-card {
-  margin-top: 18px;
+  /* margin-top handled by sidebar-stack flex gap */
+}
+
+.panel-header-toggle {
+  width: 100%;
+  border: none;
+  background: transparent;
+  text-align: left;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  border-radius: var(--radius);
+  outline: none;
+  transition: background-color 0.2s ease;
+}
+
+.panel-header-toggle:hover {
+  background-color: var(--color-surface-soft);
+}
+
+.panel-header-toggle:not(.collapsed) {
+  border-radius: var(--radius) var(--radius) 0 0;
 }
 
 .contribution-card {
   padding: 18px;
-  margin-top: 18px;
+  /* margin-top handled by sidebar-stack flex gap */
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 300px;
 }
 
 .progress-container {
@@ -734,6 +796,34 @@ a {
   flex-direction: column;
   gap: 12px;
   margin-top: 14px;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 6px;
+}
+
+@media (max-width: 1120px) {
+  .contribution-list {
+    max-height: 280px;
+  }
+}
+
+.contribution-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.contribution-list::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 999px;
+}
+
+.contribution-list::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 999px;
+}
+
+.contribution-list::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted);
 }
 
 .contribution-item {

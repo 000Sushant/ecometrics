@@ -551,80 +551,8 @@ Chart.register(...registerables);
       </section>
 
       <section class="section-grid">
-        <div class="panel">
-          <div class="panel-header">
-            <div>
-              <h2 class="panel-title" style="display: inline-flex; align-items: center; gap: 8px;">
-                <span>Negative Climate Impact Briefs</span>
-                <span
-                  class="badge"
-                  [style.--topic-color]="
-                    isLiveFeed() ? 'var(--color-danger)' : 'var(--color-primary)'
-                  "
-                  [style.--topic-bg]="isLiveFeed() ? '#fee2e2' : 'var(--color-primary-soft)'"
-                  style="font-size: 0.68rem; padding: 2px 6px; min-height: auto;"
-                >
-                  {{ isLiveFeed() ? 'Live News Feed' : 'Historical Archive' }}
-                </span>
-              </h2>
-              <p class="panel-subtitle">
-                Tracking only high-emission news where political decisions, infrastructure growth,
-                or mass events increase carbon burden.
-              </p>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <button
-                type="button"
-                class="primary-button fetch-news-btn"
-                [disabled]="loading()"
-                (click)="manualFetchNews()"
-                style="padding: 0 10px; min-height: 28px; font-size: 0.8rem;"
-              >
-                <svg
-                  width="14"
-                  height="14"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2.5"
-                  style="display: inline-block; vertical-align: middle;"
-                >
-                  <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
-                </svg>
-                <span style="vertical-align: middle;">{{
-                  loading() ? 'Fetching...' : 'Fetch Latest News'
-                }}</span>
-              </button>
-              <button
-                type="button"
-                class="quiet-button"
-                (click)="restoreModeledBriefs()"
-                style="min-height: 28px; padding: 0 10px; font-size: 0.8rem;"
-              >
-                Reset desk
-              </button>
-            </div>
-          </div>
-
-          <div *ngIf="error()" class="news-error" role="alert">
-            {{ error() }} Showing modeled dashboard briefs until the backend responds.
-          </div>
-
-          <div class="brief-list">
-            <app-impact-card
-              *ngFor="let report of visibleReports()"
-              [report]="report"
-              [hasProtested]="protestedReportIds().has(report.id)"
-              (mouseenter)="setActiveReport(report)"
-              (focusin)="setActiveReport(report)"
-              (vote)="handleVote(report.id, $event)"
-            ></app-impact-card>
-          </div>
-        </div>
-
-        <aside class="sidebar-stack">
-          <app-footprint></app-footprint>
-
+        <div class="main-column">
+          <!-- Topic Pressure (Moved from sidebar to top of main column) -->
           <section class="panel analytics-stack">
             <div class="panel-header">
               <div>
@@ -647,86 +575,185 @@ Chart.register(...registerables);
             </div>
           </section>
 
-          <section class="panel leaderboard-card">
+          <!-- Climate Impact -->
+          <div class="panel">
             <div class="panel-header">
               <div>
-                <h2 class="panel-title">Green Champions Leaderboard</h2>
-                <p class="panel-subtitle">This week's top pledgers, ranked by CO₂ saved.</p>
-              </div>
-            </div>
-            <div class="leaderboard-list">
-              <div class="leaderboard-row" *ngFor="let entry of leaderboard">
-                <span class="leaderboard-rank" [class.top]="entry.rank <= 3">{{
-                  medal(entry.rank)
-                }}</span>
-                <div class="leaderboard-identity">
-                  <span class="leaderboard-name">{{ entry.name }}</span>
-                  <span class="leaderboard-meta"
-                    >{{ entry.location }} · {{ entry.streak }}-day streak</span
+                <h2 class="panel-title" style="display: inline-flex; align-items: center; gap: 8px;">
+                  <span>Climate Impact</span>
+                  <span
+                    class="badge"
+                    [style.--topic-color]="
+                      isLiveFeed() ? 'var(--color-danger)' : 'var(--color-primary)'
+                    "
+                    [style.--topic-bg]="isLiveFeed() ? '#fee2e2' : 'var(--color-primary-soft)'"
+                    style="font-size: 0.68rem; padding: 2px 6px; min-height: auto;"
                   >
-                </div>
-                <strong class="leaderboard-score">{{ entry.co2SavedKg.toFixed(1) }} kg</strong>
-              </div>
-
-              <div class="leaderboard-gap" aria-hidden="true">⋯</div>
-
-              <div class="leaderboard-row current-user">
-                <span class="leaderboard-rank">{{ medal(currentUserRank.rank) }}</span>
-                <div class="leaderboard-identity">
-                  <span class="leaderboard-name">{{ currentUserRank.name }}</span>
-                  <span class="leaderboard-meta"
-                    >{{ currentUserRank.location }} · {{ currentUserRank.streak }}-day streak</span
-                  >
-                </div>
-                <strong class="leaderboard-score"
-                  >{{ currentUserRank.co2SavedKg.toFixed(1) }} kg</strong
-                >
-              </div>
-            </div>
-          </section>
-
-          <section class="panel contribution-card">
-            <h2 class="panel-title">My Daily Green Pledge</h2>
-            <p class="panel-subtitle">
-              Your daily promise to the planet. Commit to small actions today for a greener
-              tomorrow.
-            </p>
-
-            <div class="progress-container">
-              <div class="progress-labels">
-                <span
-                  >Pledge Progress: {{ totalSavedCo2().toFixed(1) }} / {{ dailyTarget }} kg
-                  CO₂</span
-                >
-                <span>{{ progressPercent() }}%</span>
-              </div>
-              <div class="progress-track">
-                <div class="progress-bar" [style.width.%]="progressPercent()"></div>
-              </div>
-            </div>
-
-            <div class="contribution-list">
-              <label
-                *ngFor="let item of contributionActions()"
-                class="contribution-item"
-                [class.checked]="item.checked"
-              >
-                <input type="checkbox" [checked]="item.checked" (change)="toggleAction(item.id)" />
-                <div class="contribution-item-text">
-                  <span class="contribution-item-label">{{ item.label }}</span>
-                  <span class="contribution-item-saving">
-                    Estimated savings: {{ item.co2SavedKg }} kg CO₂/day
+                    {{ isLiveFeed() ? 'Live News Feed' : 'Historical Archive' }}
                   </span>
-                </div>
-              </label>
+                </h2>
+                <p class="panel-subtitle">
+                  Tracking only high-emission news where political decisions, infrastructure growth,
+                  or mass events increase carbon burden.
+                </p>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <button
+                  type="button"
+                  class="primary-button fetch-news-btn"
+                  [disabled]="loading()"
+                  (click)="manualFetchNews()"
+                  style="padding: 0 10px; min-height: 28px; font-size: 0.8rem;"
+                >
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2.5"
+                    style="display: inline-block; vertical-align: middle;"
+                  >
+                    <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
+                  </svg>
+                  <span style="vertical-align: middle;">{{
+                    loading() ? 'Fetching...' : 'Fetch Latest News'
+                  }}</span>
+                </button>
+                <button
+                  type="button"
+                  class="quiet-button"
+                  (click)="restoreModeledBriefs()"
+                  style="min-height: 28px; padding: 0 10px; font-size: 0.8rem;"
+                >
+                  Reset desk
+                </button>
+              </div>
             </div>
 
-            <div class="contribution-summary">
-              <span>Total Pledged Savings:</span>
-              <strong>{{ totalSavedCo2().toFixed(1) }} kg CO₂</strong>
+            <div *ngIf="error()" class="news-error" role="alert">
+              {{ error() }} Showing modeled dashboard briefs until the backend responds.
             </div>
-          </section>
-        </aside>
+
+            <div class="brief-list">
+              <app-impact-card
+                *ngFor="let report of visibleReports()"
+                [report]="report"
+                [hasProtested]="protestedReportIds().has(report.id)"
+                (mouseenter)="setActiveReport(report)"
+                (focusin)="setActiveReport(report)"
+                (vote)="handleVote(report.id, $event)"
+              ></app-impact-card>
+            </div>
+          </div>
+        </div>
+
+        <div class="sidebar-wrapper">
+          <aside class="sidebar-stack">
+            <!-- Green Champions Leaderboard (Moved to the top of sidebar, collapsible by default) -->
+            <section class="panel leaderboard-card">
+              <button
+                type="button"
+                class="panel-header-toggle"
+                [class.collapsed]="leaderboardCollapsed()"
+                (click)="leaderboardCollapsed.set(!leaderboardCollapsed())"
+                [attr.aria-expanded]="!leaderboardCollapsed()"
+              >
+                <div>
+                  <h2 class="panel-title" style="margin: 0;">Green Champions Leaderboard</h2>
+                  <p class="panel-subtitle" *ngIf="!leaderboardCollapsed()" style="margin: 2px 0 0;">
+                    This week's top pledgers, ranked by CO₂ saved.
+                  </p>
+                </div>
+                <svg
+                  width="20"
+                  height="20"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  [style.transform]="leaderboardCollapsed() ? 'rotate(0deg)' : 'rotate(180deg)'"
+                  style="transition: transform 0.2s ease; color: var(--color-muted); flex-shrink: 0;"
+                >
+                  <path d="M19 9l-7 7-7-7" />
+                </svg>
+              </button>
+              <div class="leaderboard-list" *ngIf="!leaderboardCollapsed()" style="padding: 0 12px 12px;">
+                <div class="leaderboard-row" *ngFor="let entry of leaderboard">
+                  <span class="leaderboard-rank" [class.top]="entry.rank <= 3">{{
+                    medal(entry.rank)
+                  }}</span>
+                  <div class="leaderboard-identity">
+                    <span class="leaderboard-name">{{ entry.name }}</span>
+                    <span class="leaderboard-meta"
+                      >{{ entry.location }} · {{ entry.streak }}-day streak</span
+                    >
+                  </div>
+                  <strong class="leaderboard-score">{{ entry.co2SavedKg.toFixed(1) }} kg</strong>
+                </div>
+
+                <div class="leaderboard-gap" aria-hidden="true">⋯</div>
+
+                <div class="leaderboard-row current-user">
+                  <span class="leaderboard-rank">{{ medal(currentUserRank.rank) }}</span>
+                  <div class="leaderboard-identity">
+                    <span class="leaderboard-name">{{ currentUserRank.name }}</span>
+                    <span class="leaderboard-meta"
+                      >{{ currentUserRank.location }} · {{ currentUserRank.streak }}-day streak</span
+                    >
+                  </div>
+                  <strong class="leaderboard-score"
+                    >{{ currentUserRank.co2SavedKg.toFixed(1) }} kg</strong
+                  >
+                </div>
+              </div>
+            </section>
+
+            <app-footprint></app-footprint>
+
+            <section class="panel contribution-card">
+              <h2 class="panel-title">My Daily Green Pledge</h2>
+              <p class="panel-subtitle">
+                Your daily promise to the planet. Commit to small actions today for a greener
+                tomorrow.
+              </p>
+
+              <div class="progress-container">
+                <div class="progress-labels">
+                  <span
+                    >Pledge Progress: {{ totalSavedCo2().toFixed(1) }} / {{ dailyTarget }} kg
+                    CO₂</span
+                  >
+                  <span>{{ progressPercent() }}%</span>
+                </div>
+                <div class="progress-track">
+                  <div class="progress-bar" [style.width.%]="progressPercent()"></div>
+                </div>
+              </div>
+
+              <div class="contribution-list">
+                <label
+                  *ngFor="let item of contributionActions()"
+                  class="contribution-item"
+                  [class.checked]="item.checked"
+                >
+                  <input type="checkbox" [checked]="item.checked" (change)="toggleAction(item.id)" />
+                  <div class="contribution-item-text">
+                    <span class="contribution-item-label">{{ item.label }}</span>
+                    <span class="contribution-item-saving">
+                      Estimated savings: {{ item.co2SavedKg }} kg CO₂/day
+                    </span>
+                  </div>
+                </label>
+              </div>
+
+              <div class="contribution-summary">
+                <span>Total Pledged Savings:</span>
+                <strong>{{ totalSavedCo2().toFixed(1) }} kg CO₂</strong>
+              </div>
+            </section>
+          </aside>
+        </div>
       </section>
 
       <footer class="dashboard-footer">
@@ -805,6 +832,7 @@ export class NetImpactFeedComponent implements OnInit {
   ];
   protected readonly activeTopic = signal<TopicFilter>('All');
   protected readonly isLiveFeed = signal<boolean>(false);
+  protected readonly leaderboardCollapsed = signal<boolean>(true);
   protected readonly reports = signal<DashboardBrief[]>(
     this.modeledBriefs.filter((r) => r.co2EquivalentKg > 0),
   );
@@ -891,6 +919,13 @@ export class NetImpactFeedComponent implements OnInit {
     },
     { id: 'cup', label: 'Use a reusable bag and coffee cup', co2SavedKg: 0.1, checked: false },
     { id: 'lunch', label: 'Choose a vegetarian option for lunch', co2SavedKg: 1.4, checked: false },
+    { id: 'vegan-day', label: 'Eat completely plant-based meals for the day', co2SavedKg: 2.5, checked: false },
+    { id: 'thermostat', label: 'Adjust thermostat by 1°C to reduce heating/cooling load', co2SavedKg: 0.8, checked: false },
+    { id: 'compost', label: 'Compost organic waste instead of land-filling it', co2SavedKg: 0.3, checked: false },
+    { id: 'bottle', label: 'Choose tap water in a reusable bottle over bottled water', co2SavedKg: 0.2, checked: false },
+    { id: 'secondhand', label: 'Shop pre-owned/secondhand instead of brand new items', co2SavedKg: 3.0, checked: false },
+    { id: 'digital', label: 'Delete 100 unused emails and clean cloud storage space', co2SavedKg: 0.05, checked: false },
+    { id: 'local-food', label: 'Buy locally-sourced food to reduce food transport emissions', co2SavedKg: 0.4, checked: false },
   ]);
 
   protected readonly totalSavedCo2 = computed(() => {
@@ -1341,27 +1376,27 @@ export class NetImpactFeedComponent implements OnInit {
     else {
       topic =
         title.includes('airline') ||
-        title.includes('aviation') ||
-        title.includes('travel') ||
-        title.includes('fifa') ||
-        title.includes('f1') ||
-        title.includes('flight') ||
-        title.includes('fuel') ||
-        title.includes('oil') ||
-        title.includes('gas') ||
-        title.includes('coal')
+          title.includes('aviation') ||
+          title.includes('travel') ||
+          title.includes('fifa') ||
+          title.includes('f1') ||
+          title.includes('flight') ||
+          title.includes('fuel') ||
+          title.includes('oil') ||
+          title.includes('gas') ||
+          title.includes('coal')
           ? 'Aviation & Energy'
           : title.includes('resort') ||
-              title.includes('wetland') ||
-              title.includes('ecosystem') ||
-              title.includes('tourism') ||
-              title.includes('moorings') ||
-              title.includes('amoc') ||
-              title.includes('alban') ||
-              title.includes('forest') ||
-              title.includes('glacier') ||
-              title.includes('reef') ||
-              title.includes('wildlife')
+            title.includes('wetland') ||
+            title.includes('ecosystem') ||
+            title.includes('tourism') ||
+            title.includes('moorings') ||
+            title.includes('amoc') ||
+            title.includes('alban') ||
+            title.includes('forest') ||
+            title.includes('glacier') ||
+            title.includes('reef') ||
+            title.includes('wildlife')
             ? 'Ecosystems & Tourism'
             : 'Climate & Policy';
     }

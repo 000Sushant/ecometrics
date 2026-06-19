@@ -23,11 +23,10 @@ app.use((req, res, next) => {
   next();
 });
 
-// Proxy API requests to the backend server
 const apiTarget = process.env['API_URL'] || 'http://localhost:3000';
 app.use(
-  '/api',
   createProxyMiddleware({
+    pathFilter: '/api',
     target: apiTarget,
     changeOrigin: true,
   }),

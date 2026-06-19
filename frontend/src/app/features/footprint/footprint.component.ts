@@ -25,7 +25,7 @@ interface BreakdownItem {
     <section class="panel footprint-card" aria-labelledby="footprint-title">
       <div class="panel-header">
         <div>
-          <h2 class="panel-title" id="footprint-title">Your Weekly Footprint</h2>
+          <h2 class="panel-title" id="footprint-title">Know Your Weekly Footprint</h2>
           <p class="panel-subtitle">Estimate where your carbon comes from, then track it down.</p>
         </div>
       </div>
