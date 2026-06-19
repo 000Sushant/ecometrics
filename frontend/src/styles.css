@@ -323,6 +323,7 @@ a {
 }
 
 @keyframes leaf-sway {
+
   0%,
   100% {
     transform: rotate(-3deg) translateY(0);
@@ -644,6 +645,7 @@ a {
 }
 
 @keyframes float-ice {
+
   0%,
   100% {
     transform: translateY(0);
@@ -907,9 +909,10 @@ a {
 }
 
 @media (max-width: 1120px) {
+
   .hero,
   .section-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .hero-visual {
@@ -953,9 +956,20 @@ a {
   .bar-row {
     grid-template-columns: 86px minmax(0, 1fr) 38px;
   }
+
+  .donut-layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .donut-chart-wrapper {
+    align-self: center;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
+
   *,
   *::before,
   *::after {
@@ -1134,6 +1148,7 @@ a {
 
 .donut-list {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -1495,7 +1510,7 @@ a {
 
 @media (max-width: 1120px) {
   .map-workspace {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 
   .map-sidebar-details {
@@ -1513,6 +1528,10 @@ a {
 
   .map-controls {
     width: 100%;
+    /* Stack the year slider and country picker; side-by-side they each ask for
+       100% width and overflow the row (the country dropdown got cut off). */
+    flex-direction: column;
+    gap: 10px;
   }
 
   .scrubber-control {
