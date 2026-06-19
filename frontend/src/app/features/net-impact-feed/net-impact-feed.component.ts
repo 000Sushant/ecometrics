@@ -30,7 +30,11 @@ import {
   OLYMPIC_POOL_LITRES,
   CITY_PARK_KG_CO2,
   COMMUTE_YEAR_KG_CO2,
+  COMMUTE_KG_PER_KM,
+  DIET_WEEKLY_KG,
+  ENERGY_WEEKLY_KG,
 } from '../../core/carbon.constants';
+import { FootprintService } from '../../core/services/footprint.service';
 import { Chart, registerables } from 'chart.js';
 
 Chart.register(...registerables);
@@ -97,7 +101,7 @@ Chart.register(...registerables);
               </span>
               <span>EcoMetrics</span>
             </div>
-            <div style="display: flex; align-items: center; gap: 8px;">
+            <div class="brand-actions">
               <button
                 type="button"
                 class="quiet-button insight-toggle-btn"
@@ -105,19 +109,20 @@ Chart.register(...registerables);
                 (click)="showInsightsMap.set(!showInsightsMap())"
               >
                 <svg
+                  aria-hidden="true"
                   width="15"
                   height="15"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="2.5"
-                  style="margin-right: 4px; display: inline-block; vertical-align: middle;"
+                  class="btn-icon"
                 >
                   <circle cx="12" cy="12" r="10" />
                   <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
                   <path d="M2 12h20" />
                 </svg>
-                <span style="vertical-align: middle;">{{
+                <span class="valign-middle">{{
                   showInsightsMap() ? 'Hide Map' : 'More Insights'
                 }}</span>
               </button>
@@ -127,11 +132,9 @@ Chart.register(...registerables);
 
           <div>
             <p class="eyebrow">Your personal carbon footprint dashboard</p>
-            <h1 id="dashboard-title">Understand, track, and shrink your carbon footprint.</h1>
+            <h1 id="dashboard-title">Shrink your footprint. Shape the global picture.</h1>
             <p class="hero-lede">
-              Estimate your weekly footprint, commit to simple daily actions, and get personalized
-              insights — set against real-world climate context so you can see how your choices fit
-              the bigger picture.
+              Track your personal emissions, commit to daily pledges, and see how your choices compare with the real-world decisions of industries, tech giants, and world leaders. Understand your footprint in a global context.
             </p>
           </div>
 
@@ -195,7 +198,7 @@ Chart.register(...registerables);
             <div class="pulse-card relative-card document-style-card">
               <span class="pulse-card-eyebrow">Total Carbon Output (2017–2026)</span>
 
-              <div class="donut-layout" style="margin-top: 8px;">
+              <div class="donut-layout">
                 <!-- Left: Donut Chart -->
                 <div class="donut-chart-wrapper">
                   <svg viewBox="0 0 42 42" class="donut-svg">
@@ -279,7 +282,7 @@ Chart.register(...registerables);
                 <strong>Global Carbon Footprint</strong>
                 <span class="history-years">2017 - 2026</span>
               </div>
-              <div class="chart-container document-style" style="position: relative; height: 80px;">
+              <div class="chart-container document-style">
                 <canvas
                   #globalChartCanvas
                   role="img"
@@ -358,14 +361,10 @@ Chart.register(...registerables);
 
         <div class="map-workspace">
           <!-- Left/Center: SVG World Map (decorative duplicate of the country selector + detail panel) -->
-          <div
-            class="map-canvas-wrapper"
-            style="position: relative; width: 100%; display: flex; flex-direction: column; align-items: center;"
-          >
+          <div class="map-canvas-wrapper">
             <div
               #mapContainer
               class="world-map-container"
-              style="width: 100%;"
               aria-hidden="true"
               (click)="onMapClick($event)"
               (mouseover)="onMapHover($event)"
@@ -404,7 +403,7 @@ Chart.register(...registerables);
               <div class="trend-section-header">
                 <span>10-Year Trend (2017-2026)</span>
               </div>
-              <div class="mini-trend-chart" style="position: relative; height: 70px; width: 100%;">
+              <div class="mini-trend-chart">
                 <canvas
                   #countryChartCanvas
                   role="img"
@@ -441,6 +440,7 @@ Chart.register(...registerables);
 
               <div class="context-item">
                 <svg
+                  aria-hidden="true"
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
@@ -448,7 +448,6 @@ Chart.register(...registerables);
                   stroke="currentColor"
                   stroke-width="2"
                   class="context-icon text-warning"
-                  style="display: inline-block; vertical-align: middle;"
                 >
                   <path
                     d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v4c0 .6.4 1 1 1h2"
@@ -457,13 +456,14 @@ Chart.register(...registerables);
                   <path d="M9 17h6" />
                   <circle cx="17" cy="17" r="2" />
                 </svg>
-                <span class="context-desc" style="vertical-align: middle; margin-left: 6px;">{{
+                <span class="context-desc">{{
                   countryCarEquivalent()
                 }}</span>
               </div>
 
               <div class="context-item" style="margin-top: 8px;">
                 <svg
+                  aria-hidden="true"
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
@@ -471,11 +471,10 @@ Chart.register(...registerables);
                   stroke="currentColor"
                   stroke-width="2"
                   class="context-icon text-primary"
-                  style="display: inline-block; vertical-align: middle;"
                 >
                   <path d="M12 22V12m0 0a5 5 0 0 0 5-5c0-2.8-2.2-5-5-5S7 4.2 7 7a5 5 0 0 0 5 5Z" />
                 </svg>
-                <span class="context-desc" style="vertical-align: middle; margin-left: 6px;">{{
+                <span class="context-desc">{{
                   countryTreeEquivalent()
                 }}</span>
               </div>
@@ -492,7 +491,7 @@ Chart.register(...registerables);
             stroke="currentColor"
             stroke-width="2"
             aria-hidden="true"
-            style="color: #38bdf8; width: 18px; height: 18px; display: block;"
+            class="kpi-card-icon air"
           >
             <path
               d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"
@@ -508,7 +507,7 @@ Chart.register(...registerables);
             stroke="currentColor"
             stroke-width="2"
             aria-hidden="true"
-            style="color: var(--color-water); width: 18px; height: 18px; display: block;"
+            class="kpi-card-icon water"
           >
             <path d="M12 22a7 7 0 0 0 7-7c0-4.3-7-13-7-13S5 10.7 5 15a7 7 0 0 0 7 7Z" />
           </svg>
@@ -522,7 +521,7 @@ Chart.register(...registerables);
             stroke="currentColor"
             stroke-width="2"
             aria-hidden="true"
-            style="color: var(--color-primary); width: 18px; height: 18px; display: block;"
+            class="kpi-card-icon land"
           >
             <path d="M12 22V12m0 0a5 5 0 0 0 5-5c0-2.8-2.2-5-5-5S7 4.2 7 7a5 5 0 0 0 5 5Z" />
           </svg>
@@ -536,7 +535,7 @@ Chart.register(...registerables);
             stroke="currentColor"
             stroke-width="2"
             aria-hidden="true"
-            style="color: var(--color-warning); width: 18px; height: 18px; display: block;"
+            class="kpi-card-icon habit"
           >
             <path
               d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-1.1 0-2 .9-2 2v4c0 .6.4 1 1 1h2"
@@ -579,15 +578,14 @@ Chart.register(...registerables);
           <div class="panel">
             <div class="panel-header">
               <div>
-                <h2 class="panel-title" style="display: inline-flex; align-items: center; gap: 8px;">
+                <h2 class="panel-title panel-title-live">
                   <span>Climate Impact</span>
                   <span
-                    class="badge"
+                    class="badge badge-live"
                     [style.--topic-color]="
                       isLiveFeed() ? 'var(--color-danger)' : 'var(--color-primary)'
                     "
                     [style.--topic-bg]="isLiveFeed() ? '#fee2e2' : 'var(--color-primary-soft)'"
-                    style="font-size: 0.68rem; padding: 2px 6px; min-height: auto;"
                   >
                     {{ isLiveFeed() ? 'Live News Feed' : 'Historical Archive' }}
                   </span>
@@ -603,28 +601,27 @@ Chart.register(...registerables);
                   class="primary-button fetch-news-btn"
                   [disabled]="loading()"
                   (click)="manualFetchNews()"
-                  style="padding: 0 10px; min-height: 28px; font-size: 0.8rem;"
                 >
                   <svg
+                    aria-hidden="true"
                     width="14"
                     height="14"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     stroke-width="2.5"
-                    style="display: inline-block; vertical-align: middle;"
+                    class="inline-icon"
                   >
                     <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" />
                   </svg>
-                  <span style="vertical-align: middle;">{{
+                  <span class="valign-middle">{{
                     loading() ? 'Fetching...' : 'Fetch Latest News'
                   }}</span>
                 </button>
                 <button
                   type="button"
-                  class="quiet-button"
+                  class="quiet-button reset-desk-btn"
                   (click)="restoreModeledBriefs()"
-                  style="min-height: 28px; padding: 0 10px; font-size: 0.8rem;"
                 >
                   Reset desk
                 </button>
@@ -660,12 +657,13 @@ Chart.register(...registerables);
                 [attr.aria-expanded]="!leaderboardCollapsed()"
               >
                 <div>
-                  <h2 class="panel-title" style="margin: 0;">Green Champions Leaderboard</h2>
-                  <p class="panel-subtitle" *ngIf="!leaderboardCollapsed()" style="margin: 2px 0 0;">
+                  <h2 class="panel-title">Green Champions Leaderboard</h2>
+                  <p class="panel-subtitle" *ngIf="!leaderboardCollapsed()">
                     This week's top pledgers, ranked by CO₂ saved.
                   </p>
                 </div>
                 <svg
+                  aria-hidden="true"
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"
@@ -673,12 +671,12 @@ Chart.register(...registerables);
                   stroke="currentColor"
                   stroke-width="2.5"
                   [style.transform]="leaderboardCollapsed() ? 'rotate(0deg)' : 'rotate(180deg)'"
-                  style="transition: transform 0.2s ease; color: var(--color-muted); flex-shrink: 0;"
+                  class="rotate-chevron"
                 >
                   <path d="M19 9l-7 7-7-7" />
                 </svg>
               </button>
-              <div class="leaderboard-list" *ngIf="!leaderboardCollapsed()" style="padding: 0 12px 12px;">
+              <div class="leaderboard-list" *ngIf="!leaderboardCollapsed()">
                 <div class="leaderboard-row" *ngFor="let entry of leaderboard">
                   <span class="leaderboard-rank" [class.top]="entry.rank <= 3">{{
                     medal(entry.rank)
@@ -733,13 +731,16 @@ Chart.register(...registerables);
 
               <div class="contribution-list">
                 <label
-                  *ngFor="let item of contributionActions()"
+                  *ngFor="let item of sortedContributionActions()"
                   class="contribution-item"
                   [class.checked]="item.checked"
                 >
                   <input type="checkbox" [checked]="item.checked" (change)="toggleAction(item.id)" />
                   <div class="contribution-item-text">
-                    <span class="contribution-item-label">{{ item.label }}</span>
+                    <div class="contribution-item-header">
+                      <span class="contribution-item-label">{{ item.label }}</span>
+                      <span *ngIf="item.type === topFootprintSource()" class="badge recommended-badge">Recommended</span>
+                    </div>
                     <span class="contribution-item-saving">
                       Estimated savings: {{ item.co2SavedKg }} kg CO₂/day
                     </span>
@@ -766,13 +767,14 @@ Chart.register(...registerables);
         <div class="footer-links">
           <a href="https://000sushant.github.io/sushant-portfolio/" target="_blank" rel="noopener">
             <svg
+              aria-hidden="true"
               width="16"
               height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
-              style="display: inline-block; vertical-align: middle;"
+              class="inline-icon"
             >
               <path
                 d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"
@@ -782,13 +784,14 @@ Chart.register(...registerables);
           </a>
           <a href="https://www.linkedin.com/in/sushant--kumar/" target="_blank" rel="noopener">
             <svg
+              aria-hidden="true"
               width="16"
               height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
-              style="display: inline-block; vertical-align: middle;"
+              class="inline-icon"
             >
               <path
                 d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z"
@@ -799,13 +802,14 @@ Chart.register(...registerables);
           </a>
           <a href="https://github.com/000Sushant" target="_blank" rel="noopener">
             <svg
+              aria-hidden="true"
               width="16"
               height="16"
               viewBox="0 0 24 24"
               fill="none"
               stroke="currentColor"
               stroke-width="2"
-              style="display: inline-block; vertical-align: middle;"
+              class="inline-icon"
             >
               <path
                 d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"
@@ -820,8 +824,33 @@ Chart.register(...registerables);
 })
 export class NetImpactFeedComponent implements OnInit {
   private impactService = inject(ImpactService);
+  private footprintService = inject(FootprintService);
 
   private modeledBriefs: DashboardBrief[] = [...MODELED_BRIEFS];
+
+  protected readonly topFootprintSource = computed<'commute' | 'diet' | 'energy'>(() => {
+    const commuteKm = this.footprintService.commuteKm();
+    const diet = this.footprintService.diet();
+    const energy = this.footprintService.energy();
+
+    const commuteKg = commuteKm * COMMUTE_KG_PER_KM;
+    const dietKg = DIET_WEEKLY_KG[diet];
+    const energyKg = ENERGY_WEEKLY_KG[energy];
+
+    if (commuteKg >= dietKg && commuteKg >= energyKg) return 'commute';
+    if (dietKg >= commuteKg && dietKg >= energyKg) return 'diet';
+    return 'energy';
+  });
+
+  protected readonly sortedContributionActions = computed(() => {
+    const topSource = this.topFootprintSource();
+    const actions = this.contributionActions();
+    return [...actions].sort((a, b) => {
+      if (a.type === topSource && b.type !== topSource) return -1;
+      if (a.type !== topSource && b.type === topSource) return 1;
+      return 0;
+    });
+  });
 
   protected readonly topics: TopicFilter[] = [
     'All',
@@ -832,7 +861,7 @@ export class NetImpactFeedComponent implements OnInit {
   ];
   protected readonly activeTopic = signal<TopicFilter>('All');
   protected readonly isLiveFeed = signal<boolean>(false);
-  protected readonly leaderboardCollapsed = signal<boolean>(true);
+  protected readonly leaderboardCollapsed = signal<boolean>(false);
   protected readonly reports = signal<DashboardBrief[]>(
     this.modeledBriefs.filter((r) => r.co2EquivalentKg > 0),
   );
@@ -879,53 +908,60 @@ export class NetImpactFeedComponent implements OnInit {
       label: 'Unplug chargers and screens when not in use',
       co2SavedKg: 0.2,
       checked: false,
+      type: 'energy',
     },
-    { id: 'lights', label: 'Turn off lights in empty rooms', co2SavedKg: 0.1, checked: false },
+    { id: 'lights', label: 'Turn off lights in empty rooms', co2SavedKg: 0.1, checked: false, type: 'energy' },
     {
       id: 'shower',
       label: 'Take a 5-minute shower instead of a long hot bath',
       co2SavedKg: 1.5,
       checked: false,
+      type: 'energy',
     },
     {
       id: 'transit',
       label: 'Commute by public train or bus instead of driving',
       co2SavedKg: 4.8,
       checked: false,
+      type: 'commute',
     },
     {
       id: 'bike',
       label: 'Walk or ride a bike for trips under 2 km',
       co2SavedKg: 1.2,
       checked: false,
+      type: 'commute',
     },
     {
       id: 'coldwash',
       label: 'Wash laundry at 30°C instead of 60°C',
       co2SavedKg: 0.6,
       checked: false,
+      type: 'energy',
     },
     {
       id: 'dryer',
       label: 'Air-dry clothes on a rack instead of running the dryer',
       co2SavedKg: 1.8,
       checked: false,
+      type: 'energy',
     },
     {
       id: 'kettle',
       label: 'Boil only the exact amount of water needed',
       co2SavedKg: 0.1,
       checked: false,
+      type: 'energy',
     },
-    { id: 'cup', label: 'Use a reusable bag and coffee cup', co2SavedKg: 0.1, checked: false },
-    { id: 'lunch', label: 'Choose a vegetarian option for lunch', co2SavedKg: 1.4, checked: false },
-    { id: 'vegan-day', label: 'Eat completely plant-based meals for the day', co2SavedKg: 2.5, checked: false },
-    { id: 'thermostat', label: 'Adjust thermostat by 1°C to reduce heating/cooling load', co2SavedKg: 0.8, checked: false },
-    { id: 'compost', label: 'Compost organic waste instead of land-filling it', co2SavedKg: 0.3, checked: false },
-    { id: 'bottle', label: 'Choose tap water in a reusable bottle over bottled water', co2SavedKg: 0.2, checked: false },
-    { id: 'secondhand', label: 'Shop pre-owned/secondhand instead of brand new items', co2SavedKg: 3.0, checked: false },
-    { id: 'digital', label: 'Delete 100 unused emails and clean cloud storage space', co2SavedKg: 0.05, checked: false },
-    { id: 'local-food', label: 'Buy locally-sourced food to reduce food transport emissions', co2SavedKg: 0.4, checked: false },
+    { id: 'cup', label: 'Use a reusable bag and coffee cup', co2SavedKg: 0.1, checked: false, type: 'diet' },
+    { id: 'lunch', label: 'Choose a vegetarian option for lunch', co2SavedKg: 1.4, checked: false, type: 'diet' },
+    { id: 'vegan-day', label: 'Eat completely plant-based meals for the day', co2SavedKg: 2.5, checked: false, type: 'diet' },
+    { id: 'thermostat', label: 'Adjust thermostat by 1°C to reduce heating/cooling load', co2SavedKg: 0.8, checked: false, type: 'energy' },
+    { id: 'compost', label: 'Compost organic waste instead of land-filling it', co2SavedKg: 0.3, checked: false, type: 'diet' },
+    { id: 'bottle', label: 'Choose tap water in a reusable bottle over bottled water', co2SavedKg: 0.2, checked: false, type: 'diet' },
+    { id: 'secondhand', label: 'Shop pre-owned/secondhand instead of brand new items', co2SavedKg: 3.0, checked: false, type: 'energy' },
+    { id: 'digital', label: 'Delete 100 unused emails and clean cloud storage space', co2SavedKg: 0.05, checked: false, type: 'energy' },
+    { id: 'local-food', label: 'Buy locally-sourced food to reduce food transport emissions', co2SavedKg: 0.4, checked: false, type: 'diet' },
   ]);
 
   protected readonly totalSavedCo2 = computed(() => {

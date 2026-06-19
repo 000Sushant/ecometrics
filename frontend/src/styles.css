@@ -725,6 +725,7 @@ a {
   flex-direction: column;
   gap: 8px;
   margin-top: 14px;
+  padding: 0 12px 12px;
 }
 
 .leaderboard-row {
@@ -863,7 +864,29 @@ a {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  flex: 1;
+  min-width: 0;
 }
+
+.contribution-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+}
+
+.recommended-badge {
+  font-size: 0.65rem;
+  padding: 2px 6px;
+  min-height: auto;
+  background: var(--color-primary-soft);
+  color: var(--color-primary-dark);
+  font-weight: 800;
+  margin-left: auto;
+  border: 1px solid #b8e7c6;
+}
+
 
 .contribution-item-label {
   font-size: 0.82rem;
@@ -1041,6 +1064,7 @@ a {
   border-radius: 4px;
   background: rgba(0, 0, 0, 0.02);
   border: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
 }
 
 .mini-chart-svg {
@@ -1093,6 +1117,7 @@ a {
   align-items: center;
   gap: 16px;
   width: 100%;
+  margin-top: 8px;
 }
 
 .donut-chart-wrapper {
@@ -1484,6 +1509,8 @@ a {
 
 .context-icon {
   flex-shrink: 0;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 .context-desc {
@@ -1491,6 +1518,8 @@ a {
   color: var(--color-ink);
   font-weight: 600;
   line-height: 1.35;
+  vertical-align: middle;
+  margin-left: 6px;
 }
 
 /* active/hover country states */
@@ -1609,4 +1638,104 @@ a {
     text-align: center;
     gap: 12px;
   }
+}
+
+/* Helper utility and layout classes to remove inline styles */
+.brand-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  margin-right: 4px;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.valign-middle {
+  vertical-align: middle;
+}
+
+.map-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.world-map-container {
+  width: 100%;
+}
+
+.mini-trend-chart {
+  position: relative;
+  height: 70px;
+  width: 100%;
+}
+
+.kpi-card-icon {
+  width: 18px;
+  height: 18px;
+  display: block;
+}
+
+.kpi-card-icon.air {
+  color: #38bdf8;
+}
+
+.kpi-card-icon.water {
+  color: var(--color-water);
+}
+
+.kpi-card-icon.land {
+  color: var(--color-primary);
+}
+
+.kpi-card-icon.habit {
+  color: var(--color-warning);
+}
+
+.panel-title-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge-live {
+  font-size: 0.68rem;
+  padding: 2px 6px;
+  min-height: auto;
+}
+
+.fetch-news-btn {
+  padding: 0 10px;
+  min-height: 28px;
+  font-size: 0.8rem;
+}
+
+.inline-icon {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.reset-desk-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 0.8rem;
+}
+
+.leaderboard-card .panel-title {
+  margin: 0;
+}
+
+.leaderboard-card .panel-subtitle {
+  margin: 2px 0 0;
+}
+
+.rotate-chevron {
+  transition: transform 0.2s ease;
+  color: var(--color-muted);
+  flex-shrink: 0;
 }

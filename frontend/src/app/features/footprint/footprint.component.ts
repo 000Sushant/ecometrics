@@ -1,15 +1,16 @@
-import { CommonModule, isPlatformBrowser } from '@angular/common';
-import { Component, PLATFORM_ID, computed, inject, signal } from '@angular/core';
-
-export type Diet = 'meat' | 'average' | 'vegetarian' | 'vegan';
-export type Energy = 'grid' | 'mixed' | 'renewable';
-
-/** Illustrative weekly CO₂ emission factors (kg) used by the estimator. */
-const COMMUTE_KG_PER_KM = 0.21; // average petrol car, per km
-const DIET_WEEKLY_KG: Record<Diet, number> = { meat: 50, average: 35, vegetarian: 24, vegan: 18 };
-const ENERGY_WEEKLY_KG: Record<Energy, number> = { grid: 40, mixed: 25, renewable: 8 };
-const AVERAGE_WEEKLY_KG = 130; // reference for a typical individual footprint
-const STORAGE_KEY = 'ecometrics_footprint';
+import { CommonModule } from '@angular/common';
+import { Component, computed, inject } from '@angular/core';
+import {
+  FootprintService,
+  Diet,
+  Energy,
+} from '../../core/services/footprint.service';
+import {
+  COMMUTE_KG_PER_KM,
+  DIET_WEEKLY_KG,
+  ENERGY_WEEKLY_KG,
+  AVERAGE_WEEKLY_KG,
+} from '../../core/carbon.constants';
 
 interface BreakdownItem {
   key: 'commute' | 'diet' | 'energy';
@@ -48,7 +49,14 @@ interface BreakdownItem {
       <ul class="footprint-breakdown" aria-label="Footprint breakdown by source">
         <li *ngFor="let item of breakdown()">
           <span class="footprint-breakdown-label">{{ item.label }}</span>
-          <span class="footprint-breakdown-track">
+          <span
+            class="footprint-breakdown-track"
+            role="progressbar"
+            [attr.aria-valuenow]="sharePercent(item.kg)"
+            aria-valuemin="0"
+            aria-valuemax="100"
+            [attr.aria-label]="item.label + ' emissions percentage'"
+          >
             <span class="footprint-breakdown-fill" [style.width.%]="sharePercent(item.kg)"></span>
           </span>
           <span class="footprint-breakdown-kg">{{ item.kg }} kg</span>
@@ -218,16 +226,11 @@ interface BreakdownItem {
   ],
 })
 export class FootprintComponent {
-  private readonly platformId = inject(PLATFORM_ID);
-  private readonly isBrowser = isPlatformBrowser(this.platformId);
+  private footprintService = inject(FootprintService);
 
-  protected readonly commuteKm = signal(80);
-  protected readonly diet = signal<Diet>('average');
-  protected readonly energy = signal<Energy>('grid');
-
-  constructor() {
-    this.restore();
-  }
+  protected readonly commuteKm = this.footprintService.commuteKm;
+  protected readonly diet = this.footprintService.diet;
+  protected readonly energy = this.footprintService.energy;
 
   protected readonly breakdown = computed<BreakdownItem[]>(() => [
     {
@@ -266,53 +269,26 @@ export class FootprintComponent {
       }
       return `Diet is your biggest source, but it is already low-carbon. Keep it up and look at trimming travel or home energy next.`;
     }
-    // Energy can only be the top source when it is grid/mixed (both above the renewable
-    // baseline), so there is always a positive saving to recommend here.
     const saved = ENERGY_WEEKLY_KG[this.energy()] - ENERGY_WEEKLY_KG.renewable;
     return `Home energy is your biggest source. Switching to a mostly-renewable tariff would save about ${saved} kg CO₂ a week.`;
   });
 
   protected sharePercent(kg: number): number {
-    // weeklyTotal is always positive (diet + energy are never zero).
-    return Math.round((kg / this.weeklyTotal()) * 100);
+    const total = this.weeklyTotal();
+    return total > 0 ? Math.round((kg / total) * 100) : 0;
   }
 
   protected updateCommute(value: string): void {
     const parsed = parseInt(value, 10);
     const km = Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(2000, parsed));
-    this.commuteKm.set(km);
-    this.persist();
+    this.footprintService.updateCommute(km);
   }
 
   protected updateDiet(value: Diet): void {
-    this.diet.set(value);
-    this.persist();
+    this.footprintService.updateDiet(value);
   }
 
   protected updateEnergy(value: Energy): void {
-    this.energy.set(value);
-    this.persist();
-  }
-
-  private persist(): void {
-    if (!this.isBrowser) return;
-    localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify({ commuteKm: this.commuteKm(), diet: this.diet(), energy: this.energy() }),
-    );
-  }
-
-  private restore(): void {
-    if (!this.isBrowser) return;
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-    try {
-      const saved = JSON.parse(raw) as Partial<{ commuteKm: number; diet: Diet; energy: Energy }>;
-      if (typeof saved.commuteKm === 'number') this.commuteKm.set(saved.commuteKm);
-      if (saved.diet) this.diet.set(saved.diet);
-      if (saved.energy) this.energy.set(saved.energy);
-    } catch {
-      // Ignore malformed persisted state and fall back to defaults.
-    }
+    this.footprintService.updateEnergy(value);
   }
 }

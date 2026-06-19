@@ -46,6 +46,18 @@ export class GeminiClient implements IGeminiClient {
       },
     });
 
+    const sanitize = (text: string) => {
+      if (!text) return '';
+      return text
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"')
+        .replace(/\n/g, ' ');
+    };
+
+    const safeTitle = sanitize(article.title);
+    const safeDescription = sanitize(article.description);
+    const safeContent = sanitize(article.content || '');
+
     const prompt = `
 You are an expert environmental data scientist analyzing a climate, energy, or environmental news article.
 Analyze the following article details and estimate the ecological impact.
@@ -62,12 +74,13 @@ Otherwise (if it is a carbon-emitting, fossil-fuel dependent, or environmentally
 - simplifiedTitle: A very simple, layperson-friendly title that summarizes the core environmental event or impact described (must be under 15 words).
 - isGlobalEvent: A boolean indicating if this article describes a major global or international event, or a national development with significant global implications.
 
-Title: "${article.title}"
-Description: "${article.description}"
-Content: "${article.content || ''}"
+Title: "${safeTitle}"
+Description: "${safeDescription}"
+Content: "${safeContent}"
 
 Output JSON format ONLY. Do not write markdown blocks around it.
 `;
+
 
     try {
       const result = await model.generateContent(prompt);

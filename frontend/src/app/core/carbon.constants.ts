@@ -18,3 +18,9 @@ export const CITY_PARK_KG_CO2 = 36_800;
 
 /** Emissions from one year of car commuting, in kg of CO₂. */
 export const COMMUTE_YEAR_KG_CO2 = 525.7;
+
+export const COMMUTE_KG_PER_KM = 0.21;
+export const DIET_WEEKLY_KG = { meat: 50, average: 35, vegetarian: 24, vegan: 18 } as const;
+export const ENERGY_WEEKLY_KG = { grid: 40, mixed: 25, renewable: 8 } as const;
+export const AVERAGE_WEEKLY_KG = 130;
+
