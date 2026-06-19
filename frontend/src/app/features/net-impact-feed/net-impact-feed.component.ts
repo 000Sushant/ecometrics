@@ -1244,9 +1244,15 @@ export class NetImpactFeedComponent implements OnInit {
     if (initialActive) {
       this.activeReport.set(initialActive);
     }
-    this.fetchClimateHistory();
-    this.fetchCountryEmissions();
+    // Only talk to the backend in the browser. During SSR / static prerender
+    // (which runs at build time, where no backend exists) these HTTP calls
+    // would otherwise hang or fail — and because every route is prerendered
+    // (RenderMode.Prerender), a build-time render that self-requests the API
+    // can dead-lock and time out. The data is fetched client-side after
+    // hydration; the dashboard renders fine from its built-in defaults first.
     if (this.isBrowser) {
+      this.fetchClimateHistory();
+      this.fetchCountryEmissions();
       this.loadWorldMapSvg();
     }
   }
